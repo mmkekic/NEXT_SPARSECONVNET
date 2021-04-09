@@ -3,7 +3,7 @@
 This is a module for using SparseConvNet on NEXT data.
 
 ## Setup
-Needed pytorch, cuda, SparseConvNet git@github.com:facebookresearch/SparseConvNet.git
+Needed pytorch, cuda, SparseConvNet https://github.com/facebookresearch/SparseConvNet
 
 ## Organization
 The model contains src, examples and scripts
