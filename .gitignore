@@ -1,0 +1,25 @@
+# Byte-compiled / optimized
+__pycache__/
+*.py[cod]
+
+# C extensions
+*.c
+*.so
+
+# Distribution / packaging
+build/
+*.egg-info/
+environment-*.yml
+miniconda.sh
+
+# Unit test / coverage reports
+.hypothesis/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Backup files
+*~
+
+# macOS
+.DS_Store
