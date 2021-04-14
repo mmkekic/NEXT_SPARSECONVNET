@@ -33,17 +33,31 @@ class ResidualBlock_downsample(torch.nn.Module):
 
         return out
 
-
-class ResidualBlock(torch.nn.Module):
+class ResidualBlock_basic(torch.nn.Module):
     def __init__(self, inplanes,  kernel):
         # f
         #BNRelu
         #SubmanifoldConvolution
         #BNRELU
         #SubmanifoldConvolution
-        pass
+        torch.nn.Module.__init__(self)
+        self.inplanes=inplanes
+        self.kernel=kernel
+        #self.eps=eps
+        #self.momentum=momentum
 
+        self.bnrelu1=scn.BatchNormReLU(inplanes,eps,momentum)
+        self.subconv1=scn.SubmanifoldConvolution(3,inplanes,inplanes,(kernel,kernel,kernel),0)
+        self.bnrelu2=scn.BatchNormReLU(inplanes,eps,momentum)
+        self.subconv2=scn.SubmanifoldConvolution(3,inplanes,inplanes,(kernel,kernel,kernel),0)
+        self.suma=scn.AddTable()
 
     def forward(self, x):
         #x+f(x)
-        pass
+        y=self.bnrelu1(x)
+        y=self.subconv1(y)
+        y=self.bnrelu2(y)
+        y=self.subconv2(y)
+        x=suma([x,y])
+
+        return x
