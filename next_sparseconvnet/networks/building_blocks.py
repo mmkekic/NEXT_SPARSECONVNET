@@ -47,6 +47,6 @@ class ResidualBlock_basic(torch.nn.Module):
         y = self.subconv1(y)
         y = self.bnr2(y)
         y = self.subconv2(y)
-        x = add([x,y])
+        x = self.add([x,y])
 
         return x
