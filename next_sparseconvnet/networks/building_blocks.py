@@ -6,14 +6,16 @@ class ResidualBlock_downsample(torch.nn.Module):
     def __init__(self, inplanes, kernel, stride, bias = False, dim = 3):
         torch.nn.Module.__init__(self)
 
+        outplanes = 2 * inplanes
+
         #f1
         self.bnr1    = scn.BatchNormReLU(inplanes)
-        self.conv1   = scn.Convolution(dim, inplanes, 2 * inplanes, kernel, stride, bias)
-        self.bnr2    = scn.BatchNormReLU(2 * inplanes)
-        self.subconv = scn.SubmanifoldConvolution(dim, 2 * inplanes, 2 * inplanes, kernel, bias)
+        self.conv1   = scn.Convolution(dim, inplanes, outplanes, kernel, stride, bias)
+        self.bnr2    = scn.BatchNormReLU(outplanes)
+        self.subconv = scn.SubmanifoldConvolution(dim, outplanes, outplanes, kernel, bias)
 
         #f2
-        self.conv2   = scn.Convolution(dim, inplanes, 2 * inplanes, kernel, stride, bias)
+        self.conv2   = scn.Convolution(dim, inplanes, outplanes, kernel, stride, bias)
 
         self.add     = scn.AddTable()
 
