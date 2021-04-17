@@ -1,5 +1,8 @@
-import numpy as np
+import tables as tb
+import numpy  as np
 import torch
+
+from invisible_cities.io.dst_io import load_dst
 
 from . data_io import get_3d_input
 
@@ -16,6 +19,37 @@ class DataGen_classification(torch.utils.data.Dataset):
         label    = self.labels.iloc[idx].label
         x, y, z, ener = get_3d_input(filename, event, self.binsX, self.binsY, self.binsZ)
         return x, y, z, ener, [label], event #tener eventid puede ser util
+
+
+
+class DataGen(torch.utils.data.Dataset):
+    def __init__(self, filename, table_name):
+        """ This class yields events from pregenerated MC file.
+        Parameters:
+            filename : str; filename to read
+            table_name : str; name of the table to read
+                         currently available BinClassHits and SegClassHits
+        """
+        self.filename   = filename
+        self.table_name = table_name
+        self.events     = load_dst(filename, 'DATASET', 'EventsInfo')
+        self.bininfo    = load_dst(filename, 'DATASET', 'BinsInfo')
+
+    def __enter__(self):
+        self.h5in = tb.open_file(self.filename, 'r')
+        return self.h5in
+
+    def __exit__(self, type, value, traceback):
+        self.h5in.close()
+
+    def __getitem__(self, idx):
+        event = self.events.iloc[idx].event_id
+        hits  = self.h5in.root.DATASET[self.table_name].read_where('event_id==event')
+        if self.table_name == 'BinClassHits':
+            label = np.unique(hits['binclass'])
+        elif self.table_name == 'SegClassHits':
+            label = hits['segclass']
+        return hits['xbin'], hits['ybin'], hits['zbin'], hits['energy'], label, event
 
 
 def collatefn(batch):
