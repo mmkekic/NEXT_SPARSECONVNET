@@ -25,17 +25,19 @@ def get_bin_indices(hits, bins, label = None):
     zbin = pd.cut(hits_act.z, binsZ, labels = np.arange(0, len(binsZ)-1)).astype(int)
 
     hits_act = hits_act.assign(xbin=xbin, ybin=ybin, zbin=zbin)
-
+    hits_act.event_id = hits_act.event_id.astype(np.int64)
     #outputs df with bins index and energy, and optional label
     if label  is not None:
-        return  hits_act.groupby(['xbin', 'ybin', 'zbin', 'event_id']).apply(
-            lambda df:pd.Series({'energy':df['energy'].sum(), label:weighted_mode(df[label], df['energy'])[0][0]})).reset_index()
+        out = hits_act.groupby(['xbin', 'ybin', 'zbin', 'event_id']).apply(
+            lambda df:pd.Series({'energy':df['energy'].sum(), label:int(weighted_mode(df[label], df['energy'])[0][0])})).reset_index()
+        out[label] = out[label].astype(int)
+        return out
     else:
         return hits_act.groupby(['xbin', 'ybin', 'zbin', 'event_id']).agg({'energy':sum}).reset_index()
 
 
 def add_clf_labels(hits, particles):
-    clf_labels = particles.groupby('event_id').particle_name.apply(lambda x:sum(x=='e+'))
+    clf_labels = particles.groupby('event_id').particle_name.apply(lambda x:sum(x=='e+')).astype(int)
     clf_labels.name = 'binclass'
     return hits.merge(clf_labels, left_index=True, right_index=True).reset_index()[['event_id', 'x', 'y', 'z', 'energy', 'binclass', 'label']]
 
