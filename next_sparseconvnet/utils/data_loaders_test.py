@@ -14,11 +14,11 @@ def test_DataGen_classification(labels_df):
     assert data[3].dtype == np.float
     assert len(data[0])==len(data[1])==len(data[2])==len(data[3])
 
-    assert data[4] in [0, 1]
+    assert data[4][0] in [0, 1]
     assert isinstance(data[5], np.int64)
 
 
-def test_collatefn(labels_df):
+def test_collatefn_oldgen(labels_df):
     binsX = binsY = np.linspace(-200, 200, 11)
     binsZ = np.linspace(0, 550, 11)
     datagen = DataGen_classification(labels_df, binsX, binsY, binsZ)
