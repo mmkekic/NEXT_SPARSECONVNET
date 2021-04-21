@@ -20,7 +20,8 @@ from invisible_cities.core.configure import configure
 import dataset_labeling_utils as utils
 
 
-def get_tables(filename, config):
+def get_MCtables(filename, config, start_id=0):
+    pathname, basename = os.path.split(filename)
     min_x, max_x = config.xlim
     min_y, max_y = config.ylim
     min_z, max_z = config.zlim
@@ -32,17 +33,25 @@ def get_tables(filename, config):
     hits      = mio.load_mchits_df(filename)
     particles = mio.load_mcparticles_df(filename)
 
-
-    hits_clf = utils.add_clf_labels(hits, particles)
-    hits_clf = utils.get_bin_indices(hits_clf, bins, label = 'binclass')
-
-    if config.segmentation:
-        hits_seg = utils.add_seg_labels(hits, particles, delta_t=config.blob_delta_t, delta_e=config.blob_delta_e)
-        hits_seg = utils.get_bin_indices(hits_seg, bins, label = 'segclass')
+    if config.classification and config.segmentation:
+        hits = utils.add_clf_seg_labels(hits, particles, delta_t=config.blob_delta_t, delta_e=config.blob_delta_e)
+    elif config.classification:
+        hits = utils.add_clf_labels(hits, particles)
+    elif config.segmentation:
+        hits = utils.add_seg_labels(hits, particles, delta_t=config.blob_delta_t, delta_e=config.blob_delta_e)
     else:
-        hits_seg = None
-
-    eventInfo = hits_clf[['event_id', 'binclass']].drop_duplicates().reset_index(drop=True)
+        hits = hits.reset_index()[['event_id', 'x', 'y', 'z', 'energy']]
+    hits = utils.get_bin_indices(hits, bins, Rmax=config.Rmax)
+    hits = hits.sort_values('event_id')
+    eventInfo = hits[['event_id', 'binclass']].drop_duplicates().reset_index(drop=True)
+    print(eventInfo)
+    #create new unique identifier
+    dct_map = {eventInfo.iloc[i].event_id : i+start_id for i in range(len(eventInfo))}
+    #add dataset_id, pathname and basename to eventInfo
+    eventInfo = eventInfo.assign(pathname = pathname, basename = basename, dataset_id = eventInfo.event_id.map(dct_map))
+    #add dataset_id to hits and drop event_id
+    hits = hits.assign(dataset_id = hits.event_id.map(dct_map))
+    hits = hits.drop('event_id', axis=1)
 
     binsInfo = pd.Series({'min_x'   : min_x ,
                           'max_x'   : max_x ,
@@ -53,20 +62,20 @@ def get_tables(filename, config):
                           'min_z'   : min_z ,
                           'max_z'   : max_z ,
                           'nbins_z' : config.nbins_z,
+                          'Rmax'    : config.Rmax
                           }).to_frame().T
 
-    return eventInfo, binsInfo, hits_clf, hits_seg
+    return eventInfo, binsInfo, hits
 
 
 if __name__ == "__main__":
     config  = configure(sys.argv).as_namespace
     filesin = glob(os.path.expandvars(config.files_in))
+    start_id = 0
     for f in filesin:
-        eventInfo, binsInfo, hits_clf, hits_seg = get_tables(f, config)
+        eventInfo, binsInfo, hits = get_MCtables(f, config, start_id)
+        start_id +=len(eventInfo)
         with tb.open_file(os.path.expandvars(config.file_out), 'w') as h5out:
-            dio.df_writer(h5out, eventInfo, 'DATASET', 'EventsInfo', columns_to_index=['event_id'])
-            dio.df_writer(h5out, binsInfo, 'DATASET', 'BinsInfo')
-            if hits_clf is not None:
-                dio.df_writer(h5out, hits_clf, 'DATASET', 'BinClassHits', columns_to_index=['event_id'])
-            if hits_seg is not None:
-                dio.df_writer(h5out, hits_seg, 'DATASET', 'SegClassHits', columns_to_index=['event_id'])
+            dio.df_writer(h5out, eventInfo, 'DATASET', 'EventsInfo', columns_to_index=['dataset_id'], str_col_length=64)
+            dio.df_writer(h5out, binsInfo , 'DATASET', 'BinsInfo')
+            dio.df_writer(h5out, hits     , 'DATASET', 'Voxels', columns_to_index=['dataset_id'])

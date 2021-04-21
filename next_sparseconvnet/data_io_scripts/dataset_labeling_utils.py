@@ -12,34 +12,42 @@ from invisible_cities.io import dst_io    as dio
 from invisible_cities.core.configure import configure
 
 
-def get_bin_indices(hits, bins, label = None):
-    active = hits.label == 'ACTIVE'
+def get_bin_indices(hits, bins, Rmax=198):
+    segclass = 'segclass'
+    binclass = 'binclass'
+    fiducial_cut = (hits.x**2+hits.y**2)<Rmax**2
     binsX, binsY, binsZ = bins
-    fiducial_cut = (hits.x>=binsX.min()) & (hits.x<=binsX.max())\
+    boundary_cut = (hits.x>=binsX.min()) & (hits.x<=binsX.max())\
                  & (hits.y>=binsY.min()) & (hits.y<=binsY.max())\
                  & (hits.z>=binsZ.min()) & (hits.z<=binsZ.max())
 
-    hits_act = hits[active & fiducial_cut].reset_index(drop = True)
+    hits_act = hits[fiducial_cut & boundary_cut].reset_index(drop = True)
     xbin = pd.cut(hits_act.x, binsX, labels = np.arange(0, len(binsX)-1)).astype(int)
     ybin = pd.cut(hits_act.y, binsY, labels = np.arange(0, len(binsY)-1)).astype(int)
     zbin = pd.cut(hits_act.z, binsZ, labels = np.arange(0, len(binsZ)-1)).astype(int)
 
     hits_act = hits_act.assign(xbin=xbin, ybin=ybin, zbin=zbin)
     hits_act.event_id = hits_act.event_id.astype(np.int64)
+
+    if segclass not in hits.columns:
+        hits_act = hits_act.assign(segclass = -1)
+    if binclass not in hits.columns:
+        hits_act = hits_act.assign(binclass = -1)
+
     #outputs df with bins index and energy, and optional label
-    if label  is not None:
-        out = hits_act.groupby(['xbin', 'ybin', 'zbin', 'event_id']).apply(
-            lambda df:pd.Series({'energy':df['energy'].sum(), label:int(weighted_mode(df[label], df['energy'])[0][0])})).reset_index()
-        out[label] = out[label].astype(int)
-        return out
-    else:
-        return hits_act.groupby(['xbin', 'ybin', 'zbin', 'event_id']).agg({'energy':sum}).reset_index()
+    out = hits_act.groupby(['xbin', 'ybin', 'zbin', 'event_id']).apply(
+        lambda df:pd.Series({'energy':df['energy'].sum(),
+                             segclass:int(weighted_mode(df[segclass], df['energy'])[0][0]),
+                             binclass:int(df[binclass].unique()[0])})).reset_index()
+    out[segclass] = out[segclass].astype(int)
+    out[binclass] = out[binclass].astype(int)
+    return out
 
 
 def add_clf_labels(hits, particles):
     clf_labels = particles.groupby('event_id').particle_name.apply(lambda x:sum(x=='e+')).astype(int)
     clf_labels.name = 'binclass'
-    return hits.merge(clf_labels, left_index=True, right_index=True).reset_index()[['event_id', 'x', 'y', 'z', 'energy', 'binclass', 'label']]
+    return hits.merge(clf_labels, left_index=True, right_index=True).reset_index()[['event_id', 'x', 'y', 'z', 'energy', 'binclass']]
 
 
 def add_seg_labels(hits, particles, delta_t=None, delta_e=None, label_dict={'track':1, 'blob':2, 'rest':0}):
@@ -94,4 +102,10 @@ def add_seg_labels(hits, particles, delta_t=None, delta_e=None, label_dict={'tra
         #label as blobs hits that sum up to delta_e last energy deposition
         blob_msk = (hits_label.cumenergy<delta_e)
         hits_label.loc[trck_msk_evid & trck_msk_pid & blob_msk, 'segclass'] = label_dict['blob']
-    return hits_label[['event_id', 'x', 'y', 'z', 'energy', 'segclass', 'label']].reset_index(drop=True)
+    return hits_label[['event_id', 'x', 'y', 'z', 'energy', 'segclass']].reset_index(drop=True)
+
+
+def  add_clf_seg_labels(hits, particles, delta_t=None, delta_e=None, label_dict={'track':1, 'blob':2, 'rest':0}):
+    clf_hits = add_clf_labels(hits, particles)
+    seg_hits = add_seg_labels(hits, particles, delta_t, delta_e, label_dict)
+    return seg_hits.merge(clf_hits)
