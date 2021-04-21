@@ -2,9 +2,18 @@ import tables as tb
 import numpy  as np
 import torch
 
-from invisible_cities.io.dst_io import load_dst
+from enum import auto
+
+from invisible_cities.io   .dst_io  import load_dst
+from invisible_cities.types.ic_types import AutoNameEnumBase
 
 from . data_io import get_3d_input
+
+
+class LabelType(AutoNameEnumBase):
+    Classification = auto()
+    Segmentation   = auto()
+
 
 class DataGen_classification(torch.utils.data.Dataset):
     def __init__(self, labels, binsX, binsY, binsZ):
@@ -23,7 +32,7 @@ class DataGen_classification(torch.utils.data.Dataset):
 
 
 class DataGen(torch.utils.data.Dataset):
-    def __init__(self, filename, table_name):
+    def __init__(self, filename, label_type):
         """ This class yields events from pregenerated MC file.
         Parameters:
             filename : str; filename to read
@@ -31,7 +40,9 @@ class DataGen(torch.utils.data.Dataset):
                          currently available BinClassHits and SegClassHits
         """
         self.filename   = filename
-        self.table_name = table_name
+        if not isinstance(label_type, LabelType):
+            raise ValueError(f'{label_type} not recognized!')
+        self.label_type = label_type
         self.events     = load_dst(filename, 'DATASET', 'EventsInfo')
         self.bininfo    = load_dst(filename, 'DATASET', 'BinsInfo')
 
@@ -43,13 +54,13 @@ class DataGen(torch.utils.data.Dataset):
         self.h5in.close()
 
     def __getitem__(self, idx):
-        event = self.events.iloc[idx].event_id
-        hits  = self.h5in.root.DATASET[self.table_name].read_where('event_id==event')
-        if self.table_name == 'BinClassHits':
+        idx_ = self.events.iloc[idx].dataset_id
+        hits  = self.h5in.root.DATASET.Voxels.read_where('dataset_id==idx_')
+        if self.label_type == LabelType.Classification:
             label = np.unique(hits['binclass'])
-        elif self.table_name == 'SegClassHits':
+        elif self.label_type == LabelType.Segmentation:
             label = hits['segclass']
-        return hits['xbin'], hits['ybin'], hits['zbin'], hits['energy'], label, event
+        return hits['xbin'], hits['ybin'], hits['zbin'], hits['energy'], label, idx_
 
 
 def collatefn(batch):
