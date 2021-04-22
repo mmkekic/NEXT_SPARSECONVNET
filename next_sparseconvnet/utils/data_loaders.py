@@ -74,11 +74,10 @@ def collatefn(batch):
         coords.append(np.concatenate([x[:, None], y[:, None], z[:, None], batchid[:, None]], axis=1))
         energs.append(E)
         labels.append(lab)
-        print(lab, E)
         events[bid] = event
 
     coords = torch.tensor(np.concatenate(coords, axis=0), dtype = torch.long)
-    energs = torch.tensor(np.concatenate(energs, axis=0), dtype = torch.float)
-    labels = torch.tensor(np.concatenate(labels, axis=0), dtype = torch.int).unsqueeze(-1)
+    energs = torch.tensor(np.concatenate(energs, axis=0), dtype = torch.float).unsqueeze(-1)
+    labels = torch.tensor(np.concatenate(labels, axis=0), dtype = torch.int)
 
     return  coords, energs, labels, events
