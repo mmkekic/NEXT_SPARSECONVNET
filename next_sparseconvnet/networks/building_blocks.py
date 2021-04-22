@@ -94,7 +94,7 @@ class ConvBNBlock(torch.nn.Module):
             self.conv = scn.SubmanifoldConvolution(dim, inplanes, outplanes, kernel, bias)
         else:
             self.conv = scn.Convolution(dim, inplanes, outplanes, kernel, stride, bias)
-        self.bnr = scn.BatchNormReLU(outlanes)
+        self.bnr = scn.BatchNormReLU(outplanes)
 
     def forward(self, x):
         x = self.conv(x)
