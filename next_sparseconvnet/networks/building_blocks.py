@@ -54,37 +54,37 @@ class ResidualBlock_basic(torch.nn.Module):
         return x
 
 class ResidualBlock_upsample(torch.nn.Module):
-        def __init__(self, inplanes, kernel, stride, bias = False, dim = 3):
-            torch.nn.Module.__init__(self)
+    def __init__(self, inplanes, kernel, stride, bias = False, dim = 3):
+        torch.nn.Module.__init__(self)
 
-            outplanes = int(inplanes / 2)
+        outplanes = int(inplanes / 2)
 
-            #f1
-            self.bnr1      = scn.BatchNormReLU(inplanes)
-            self.deconv1   = scn.Deconvolution(dim, inplanes, outplanes, kernel, stride, bias)
-            self.bnr2      = scn.BatchNormReLU(outplanes)
-            self.subconv   = scn.SubmanifoldConvolution(dim, outplanes, outplanes, kernel, bias)
+        #f1
+        self.bnr1      = scn.BatchNormReLU(inplanes)
+        self.deconv1   = scn.Deconvolution(dim, inplanes, outplanes, kernel, stride, bias)
+        self.bnr2      = scn.BatchNormReLU(outplanes)
+        self.subconv   = scn.SubmanifoldConvolution(dim, outplanes, outplanes, kernel, bias)
 
-            #f2
-            self.deconv2   = scn.Deconvolution(dim, inplanes, outplanes, kernel, stride, bias)
+        #f2
+        self.deconv2   = scn.Deconvolution(dim, inplanes, outplanes, kernel, stride, bias)
 
-            self.add       = scn.AddTable()
+        self.add       = scn.AddTable()
 
-        def forward(self, x):
-            x = self.bnr1(x)
+    def forward(self, x):
+        x = self.bnr1(x)
 
-            #f1
-            y1 = self.deconv1(x)
-            y1 = self.bnr2(y1)
-            y1 = self.subconv(y1)
+        #f1
+        y1 = self.deconv1(x)
+        y1 = self.bnr2(y1)
+        y1 = self.subconv(y1)
 
-            #f2
-            y2 = self.deconv2(x)
+        #f2
+        y2 = self.deconv2(x)
 
-            #sum
-            out = self.add([y1, y2])
+        #sum
+        out = self.add([y1, y2])
 
-            return out
+        return out
 
 
 class ConvBNBlock(torch.nn.Module):
