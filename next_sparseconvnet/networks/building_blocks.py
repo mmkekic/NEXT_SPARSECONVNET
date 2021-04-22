@@ -90,12 +90,11 @@ class ResidualBlock_upsample(torch.nn.Module):
 class ConvBNBlock(torch.nn.Module):
     def __init__(self, inplanes, outplanes, kernel, stride = 1, bias = False, dim = 3):
         torch.nn.Module.__init__(self)
-        self.bnr    = scn.BatchNormReLU(inplanes)
-        self.stride=stride
         if stride==1:
             self.conv = scn.SubmanifoldConvolution(dim, inplanes, outplanes, kernel, bias)
         else:
             self.conv = scn.Convolution(dim, inplanes, outplanes, kernel, stride, bias)
+        self.bnr = scn.BatchNormReLU(outlanes)
 
     def forward(self, x):
         x = self.conv(x)
