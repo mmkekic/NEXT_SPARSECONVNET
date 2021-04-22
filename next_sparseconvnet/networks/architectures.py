@@ -1,7 +1,7 @@
 
 import torch
 import sparseconvnet as scn
-from .building_blocks import ResidualBlock_downsample, ResidualBlock_basic, ResidualBlock_upsample
+from .building_blocks import ResidualBlock_downsample, ResidualBlock_basic, ResidualBlock_upsample, ConvBNBlock
 
 class UNet(torch.nn.Module):
     '''
@@ -75,9 +75,8 @@ class UNet(torch.nn.Module):
 
         #Initial layers
         self.inp     = scn.InputLayer(dim, spatial_size)
-        self.subconv = scn.SubmanifoldConvolution(dim, start_planes, init_conv_nplanes, init_conv_kernel, False)
+        self.convBN  = ConvBNBlock(start_planes, init_conv_nplanes, init_conv_kernel)
         inplanes = init_conv_nplanes
-        self.bnr     = scn.BatchNormReLU(inplanes)
 
         #Final layers
         self.output = scn.OutputLayer(dim)
@@ -122,8 +121,7 @@ class UNet(torch.nn.Module):
 
         '''
         x = self.inp(x)
-        x = self.subconv(x)
-        x = self.bnr(x)
+        x = self.convBN(x)
 
         tmp_layers = []
 
