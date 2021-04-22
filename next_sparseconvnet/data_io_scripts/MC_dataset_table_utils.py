@@ -17,7 +17,7 @@ from invisible_cities.io import dst_io    as dio
 
 from invisible_cities.core.configure import configure
 
-import dataset_labeling_utils as utils
+from . import dataset_labeling_utils as utils
 
 
 def get_MCtables(filename, config, start_id=0):
@@ -44,7 +44,6 @@ def get_MCtables(filename, config, start_id=0):
     hits = utils.get_bin_indices(hits, bins, Rmax=config.Rmax)
     hits = hits.sort_values('event_id')
     eventInfo = hits[['event_id', 'binclass']].drop_duplicates().reset_index(drop=True)
-    print(eventInfo)
     #create new unique identifier
     dct_map = {eventInfo.iloc[i].event_id : i+start_id for i in range(len(eventInfo))}
     #add dataset_id, pathname and basename to eventInfo
@@ -66,16 +65,3 @@ def get_MCtables(filename, config, start_id=0):
                           }).to_frame().T
 
     return eventInfo, binsInfo, hits
-
-
-if __name__ == "__main__":
-    config  = configure(sys.argv).as_namespace
-    filesin = glob(os.path.expandvars(config.files_in))
-    start_id = 0
-    for f in filesin:
-        eventInfo, binsInfo, hits = get_MCtables(f, config, start_id)
-        start_id +=len(eventInfo)
-        with tb.open_file(os.path.expandvars(config.file_out), 'w') as h5out:
-            dio.df_writer(h5out, eventInfo, 'DATASET', 'EventsInfo', columns_to_index=['dataset_id'], str_col_length=64)
-            dio.df_writer(h5out, binsInfo , 'DATASET', 'BinsInfo')
-            dio.df_writer(h5out, hits     , 'DATASET', 'Voxels', columns_to_index=['dataset_id'])
