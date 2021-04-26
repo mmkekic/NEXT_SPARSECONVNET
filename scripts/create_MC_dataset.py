@@ -16,7 +16,7 @@ from invisible_cities.io import mcinfo_io as mio
 from invisible_cities.io import dst_io    as dio
 
 from invisible_cities.core.configure import configure
-from next_sparseconvnet.data_io_scripts import create_MC_dataset as mcutils
+from next_sparseconvnet.data_io_scripts import MC_dataset_table_utils as mcutils
 
 
 def get_last_id(filename):
@@ -37,7 +37,8 @@ if __name__ == "__main__":
     filesin = glob(os.path.expandvars(config.files_in))
     fout = os.path.expandvars(config.file_out)
     start_id = get_last_id(fout)
-    for f in filesin:
+    for i, f in enumerate(filesin):
+        print(i)
         eventInfo, binsInfo, hits = mcutils.get_MCtables(f, config, start_id)
         start_id +=len(eventInfo)
         with tb.open_file(fout, 'a') as h5out:
