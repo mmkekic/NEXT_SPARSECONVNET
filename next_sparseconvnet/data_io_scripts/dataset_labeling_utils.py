@@ -12,7 +12,7 @@ from invisible_cities.io import dst_io    as dio
 from invisible_cities.core.configure import configure
 
 
-def get_bin_indices(hits, bins, Rmax=198):
+def get_bin_indices(hits, bins, Rmax=207):
     segclass = 'segclass'
     binclass = 'binclass'
     fiducial_cut = (hits.x**2+hits.y**2)<Rmax**2
@@ -51,9 +51,9 @@ def add_clf_labels(hits, particles):
 
 
 def add_seg_labels(hits, particles, delta_t=None, delta_e=None, label_dict={'track':1, 'blob':2, 'rest':0}):
+    label_dict={'track':1, 'blob':2, 'rest':0}
     hits_par = pd.merge(hits, particles, left_index=True, right_index=True)
-    per_part_info = hits_par.groupby(
-        ['event_id', 'particle_id', 'particle_name', 'creator_proc']).agg(
+    per_part_info = hits_par.groupby(['event_id', 'particle_id', 'particle_name', 'creator_proc']).agg(
         {'time':[('timemin',min), ('timemax',max)], 'energy':[('energy', sum)]})
     per_part_info.columns = per_part_info.columns.get_level_values(1)
     per_part_info['DT']   = per_part_info.timemax-per_part_info.timemin
@@ -65,47 +65,43 @@ def add_seg_labels(hits, particles, delta_t=None, delta_e=None, label_dict={'tra
 
     #extract particle id that are main track
     #for e+e- that is positron and electron created in conv process
-    tracks_pos = per_part_info[(per_part_info.event_id.isin(positrion_event_ids)) &
-                               (per_part_info.particle_name.isin(['e+', 'e-'])    &
-                               (per_part_info.creator_proc == 'conv'))]
+    tracks_pos = per_part_info[(per_part_info.event_id.isin(positrion_event_ids)) &\
+                               (per_part_info.particle_name.isin(['e+', 'e-'])    &\
+                                (per_part_info.creator_proc == 'conv'))]
 
     #for no e+ events look for longest electron track
-
-    tracks_el = per_part_info[(per_part_info.event_id.isin(electron_event_ids)) &
-                              (per_part_info.particle_name == 'e-')             &
+    tracks_el = per_part_info[(per_part_info.event_id.isin(electron_event_ids)) &\
+                              (per_part_info.particle_name == 'e-')             &\
                               (per_part_info.creator_proc  == 'compt')]
     tracks_el = tracks_el.loc[tracks_el.groupby('event_id').DT.idxmax()]
 
+    #merge tracks information with segclass to hits_labels
+    tracks_info = pd.concat([tracks_el, tracks_pos]).sort_values('event_id')
+    tracks_info = tracks_info.assign(segclass = label_dict['track'])
 
-    #label all as 'rest' first
-    hits_label    = hits_par.reset_index().assign(segclass = label_dict['rest'])
+    hits_par = hits_par.reset_index()
+    hits_label = hits_par.merge(tracks_info[['event_id', 'particle_id','timemax', 'timemin', 'DT','segclass']],
+                                how='outer', on=['event_id', 'particle_id'])
+    hits_label = hits_label.fillna(label_dict['rest']) #label all non-tracks as rest
     #add cumsum energy per event per particle inverdet of hits order
     hits_label = hits_label.sort_values(['event_id', 'particle_id', 'hit_id'], ascending=[True, True, False])
     hits_label = hits_label.assign(cumenergy = hits_label.groupby(['event_id', 'particle_id']).energy.cumsum())
 
-    #find events and particles where tracks are
-    trck_msk_evid = hits_label.event_id.isin(np.concatenate([tracks_el.event_id.unique(),
-                                                             tracks_pos.event_id.unique()]))
-    trck_msk_pid  = hits_label.particle_id.isin(np.concatenate([tracks_el.particle_id.unique(),
-                                                                tracks_pos.particle_id.unique()]))
-    #label hits where all event, particle are true
-    hits_label.loc[trck_msk_evid&trck_msk_pid,  'segclass'] = label_dict['track']
-
-    #add info about tmax
-    hits_label = hits_label.merge(per_part_info[['event_id', 'particle_id', 'timemax', 'timemin']],
-                                  on=['event_id', 'particle_id'])
     if delta_t is not None:
         #label as blobs hits that are tmax-deltat per particle inside track
-        blob_msk = (hits_label.timemax-hits_label.time<delta_t)
-        hits_label.loc[trck_msk_evid & trck_msk_pid & blob_msk, 'segclass'] = label_dict['blob']
+        blob_msk = (hits_label.DT<delta_t)
+        hits_label.loc[(hits_label.segclass==label_dict['track'])& blob_msk, 'segclass'] = label_dict['blob']
     elif delta_e is not None:
         #label as blobs hits that sum up to delta_e last energy deposition
         blob_msk = (hits_label.cumenergy<delta_e)
-        hits_label.loc[trck_msk_evid & trck_msk_pid & blob_msk, 'segclass'] = label_dict['blob']
-    return hits_label[['event_id', 'x', 'y', 'z', 'energy', 'segclass']].reset_index(drop=True)
+        hits_label.loc[(hits_label.segclass==label_dict['track'])& blob_msk, 'segclass'] = label_dict['blob']
+    hits_label = hits_label[['event_id', 'x', 'y', 'z', 'energy', 'segclass']].reset_index(drop=True)
+    return hits_label
+
 
 
 def  add_clf_seg_labels(hits, particles, delta_t=None, delta_e=None, label_dict={'track':1, 'blob':2, 'rest':0}):
-    clf_hits = add_clf_labels(hits, particles)
     seg_hits = add_seg_labels(hits, particles, delta_t, delta_e, label_dict)
-    return seg_hits.merge(clf_hits)
+    clf_labels = particles.groupby('event_id').particle_name.apply(lambda x:sum(x=='e+')).astype(int)
+    clf_labels.name = 'binclass'
+    return seg_hits.merge(clf_labels, on=['event_id'])[['event_id', 'x', 'y', 'z', 'energy', 'binclass', 'segclass']]
