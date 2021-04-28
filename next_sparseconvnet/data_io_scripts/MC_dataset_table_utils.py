@@ -31,6 +31,8 @@ def get_MCtables(filename, config, start_id=0):
     bins = (bins_x, bins_y, bins_z)
 
     hits      = mio.load_mchits_df(filename)
+    #select ACTIVE hits
+    hits = hits[hits.label=='ACTIVE']
     particles = mio.load_mcparticles_df(filename)
 
     if config.classification and config.segmentation:
