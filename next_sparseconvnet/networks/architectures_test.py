@@ -8,8 +8,7 @@ from .architectures import UNet
 
 def test_UNet(MCdataset):
     datagen = DataGen(MCdataset, LabelType.Classification)
-    with datagen:
-        data = [datagen[i] for i in range(3)]
+    data = [datagen[i] for i in range(3)]
     coord, ener, lab, ev = collatefn(data)
     spatial_size = (51, 51, 51)
     init_conv_nplanes = 4

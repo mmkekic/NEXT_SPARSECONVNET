@@ -7,8 +7,7 @@ from .building_blocks import *
 
 def test_ResidualBlock_downsample(MCdataset):
     datagen = DataGen(MCdataset, LabelType.Classification)
-    with datagen:
-        data = [datagen[i] for i in range(3)]
+    data = [datagen[i] for i in range(3)]
     coord, ener, lab, ev = collatefn(data)
     spatial_size = (50, 50, 50)
     dim = 3
@@ -26,8 +25,7 @@ def test_ResidualBlock_downsample(MCdataset):
 
 def test_ResidualBlock_basic(MCdataset):
     datagen = DataGen(MCdataset, LabelType.Classification)
-    with datagen:
-        data = [datagen[i] for i in range(3)]
+    data = [datagen[i] for i in range(3)]
     coord, ener, lab, ev = collatefn(data)
     spatial_size = (50, 50, 50)
     dim = 3
@@ -44,8 +42,7 @@ def test_ResidualBlock_basic(MCdataset):
 
 def test_ResidualBlock_upsample(MCdataset):
     datagen = DataGen(MCdataset, LabelType.Classification)
-    with datagen:
-        data = [datagen[i] for i in range(3)]
+    data = [datagen[i] for i in range(3)]
     coord, ener, lab, ev = collatefn(data)
     spatial_size = (50, 50, 50)
     dim = 3
@@ -67,8 +64,7 @@ def test_ResidualBlock_upsample(MCdataset):
 
 def test_ConvBNBlock(MCdataset):
     datagen = DataGen(MCdataset, LabelType.Classification)
-    with datagen:
-        data = [datagen[i] for i in range(3)]
+    data = [datagen[i] for i in range(3)]
     coord, ener, lab, ev = collatefn(data)
     spatial_size = (50, 50, 50)
     dim = 3

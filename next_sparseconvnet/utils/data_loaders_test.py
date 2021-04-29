@@ -4,8 +4,7 @@ from . data_loaders import *
 
 def test_DataGen_bin(MCdataset):
     datagen = DataGen(MCdataset, LabelType.Classification)
-    with datagen as dg:
-        data = datagen[0]
+    data = datagen[0]
     assert len(data) == 6 #x, y, z, ener, label, event
 
     assert data[0].dtype == np.int64
@@ -20,8 +19,7 @@ def test_DataGen_bin(MCdataset):
 
 def test_DataGen_seg(MCdataset):
     datagen = DataGen(MCdataset, LabelType.Segmentation)
-    with datagen as dg:
-        data = datagen[0]
+    data = datagen[0]
     assert len(data) == 6 #x, y, z, ener, label, event
 
     assert data[0].dtype == np.int64
@@ -37,8 +35,7 @@ def test_DataGen_seg(MCdataset):
 
 def test_collatefn_bin(MCdataset):
     datagen = DataGen(MCdataset, LabelType.Classification)
-    with datagen as dg:
-        data = [datagen[i] for i in range(3)]
+    data = [datagen[i] for i in range(3)]
     batch = collatefn(data)
     assert len(batch) == 4 #coords, energies, labels, events
     coords = batch[0]
@@ -53,8 +50,7 @@ def test_collatefn_bin(MCdataset):
 
 def test_collatefn_seg(MCdataset):
     datagen = DataGen(MCdataset, LabelType.Segmentation)
-    with datagen as dg:
-        data = [datagen[i] for i in range(3)]
+    data = [datagen[i] for i in range(3)]
     batch = collatefn(data)
 
     assert len(batch) == 4 #coords, energies, labels, events
