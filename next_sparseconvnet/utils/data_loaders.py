@@ -1,7 +1,7 @@
 import tables as tb
 import numpy  as np
 import torch
-
+import warnings
 from enum import auto
 
 from invisible_cities.io   .dst_io  import load_dst
@@ -32,7 +32,7 @@ class DataGen_classification(torch.utils.data.Dataset):
 
 
 class DataGen(torch.utils.data.Dataset):
-    def __init__(self, filename, label_type):
+    def __init__(self, filename, label_type, nevents=None):
         """ This class yields events from pregenerated MC file.
         Parameters:
             filename : str; filename to read
@@ -44,6 +44,11 @@ class DataGen(torch.utils.data.Dataset):
             raise ValueError(f'{label_type} not recognized!')
         self.label_type = label_type
         self.events     = load_dst(filename, 'DATASET', 'EventsInfo')
+        if nevents is not None:
+            if nevents>=len(self.events):
+               warnings.warn(UserWarning(f'length of dataset smaller than {nevents}, using full dataset'))
+            else:
+                self.events = self.events.iloc[:nevents]
         self.bininfo    = load_dst(filename, 'DATASET', 'BinsInfo')
 
     def __enter__(self):
@@ -61,6 +66,9 @@ class DataGen(torch.utils.data.Dataset):
         elif self.label_type == LabelType.Segmentation:
             label = hits['segclass']
         return hits['xbin'], hits['ybin'], hits['zbin'], hits['energy'], label, idx_
+
+    def __len__(self):
+        return len(self.events)
 
 
 def collatefn(batch):
