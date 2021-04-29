@@ -49,17 +49,13 @@ class DataGen(torch.utils.data.Dataset):
                warnings.warn(UserWarning(f'length of dataset smaller than {nevents}, using full dataset'))
             else:
                 self.events = self.events.iloc[:nevents]
-        self.bininfo    = load_dst(filename, 'DATASET', 'BinsInfo')
-
-    def __enter__(self):
-        self.h5in = tb.open_file(self.filename, 'r')
-        return self.h5in
-
-    def __exit__(self, type, value, traceback):
-        self.h5in.close()
+        #self.bininfo    = load_dst(filename, 'DATASET', 'BinsInfo')
+        self.h5in = None
 
     def __getitem__(self, idx):
         idx_ = self.events.iloc[idx].dataset_id
+        if self.h5in is None:#this opens a table once getitem gets called
+            self.h5in = tb.open_file(self.filename, 'r')
         hits  = self.h5in.root.DATASET.Voxels.read_where('dataset_id==idx_')
         if self.label_type == LabelType.Classification:
             label = np.unique(hits['binclass'])
@@ -69,7 +65,9 @@ class DataGen(torch.utils.data.Dataset):
 
     def __len__(self):
         return len(self.events)
-
+    def __del__(self):
+        if self.h5in is not None:
+            self.h5in.close()
 
 def collatefn(batch):
     coords = []
