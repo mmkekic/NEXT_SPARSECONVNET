@@ -65,3 +65,13 @@ def test_collatefn_seg(MCdataset):
     assert coords.dtype == torch.long
     assert coords.shape[0] == energs.shape[0] == labels.shape[0]
     assert energs.dtype == torch.float
+
+
+def test_dataget_len(MCdataset):
+    datagen = DataGen(MCdataset, LabelType.Classification)
+    assert len(datagen) == 6
+    datagen = DataGen(MCdataset, LabelType.Classification, nevents=4)
+    assert len(datagen) == 4
+    with pytest.warns(UserWarning, match='length of dataset smaller than 10, using full dataset'):
+        datagen = DataGen(MCdataset, LabelType.Classification, nevents=10)
+        assert len(datagen) == 6
