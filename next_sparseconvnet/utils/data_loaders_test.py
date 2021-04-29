@@ -75,3 +75,8 @@ def test_dataget_len(MCdataset):
     with pytest.warns(UserWarning, match='length of dataset smaller than 10, using full dataset'):
         datagen = DataGen(MCdataset, LabelType.Classification, nevents=10)
         assert len(datagen) == 6
+
+
+def test_dataget_labeltype(MCdataset):
+    with pytest.raises(ValueError, match=f'Other not recognized!'):
+        datagen = DataGen(MCdataset, 'Other')
