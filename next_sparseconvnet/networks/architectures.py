@@ -146,10 +146,10 @@ class UNet(torch.nn.Module):
         return x
 
 
-class Net(torch.nn.Module):
+class ResNet(torch.nn.Module):
     '''
     This class implements a net structure built with ResNet blocks. It takes a tuple of (coordinates, features)
-    and passes it through the net.
+    and passes it through the ResNet.
 
     ...
 
@@ -172,12 +172,12 @@ class Net(torch.nn.Module):
     dim : int, optional
         Number of dimensions of the input. The default is 3.
     start_planes : int, optional
-        Number of planes that enter the UNet. The default is 1.
+        Number of planes that enter the ResNet. The default is 1.
 
     Methods
     -------
     forward(x)
-        Passes the input through the UNet
+        Passes the input through the ResNet
     '''
     def __init__(self, spatial_size, init_conv_nplanes, init_conv_kernel, kernel_sizes, stride, basic_num, nclasses = 2, dim = 3, start_planes = 1):
         '''
