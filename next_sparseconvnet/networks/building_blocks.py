@@ -100,3 +100,16 @@ class ConvBNBlock(torch.nn.Module):
         x = self.conv(x)
         x = self.bnr(x)
         return x
+
+
+def calculate_output_dimension(spatial_size, kernel_sizes, stride_sizes):
+    """Assures that kernel and stride sizes are suitable for our input size and returns the output size for the bottom layer after downsampling.
+       Note that kernel_sizes' last element does not correspond to the kernel of a downsample, so it does not count for the calculation
+    """
+    out_dim = []
+    for o in spatial_size:
+        for i, k in enumerate(kernel_sizes[:-1]):
+            o = (o - k)/stride_sizes[i] + 1
+            assert o == int(o), 'Shape mismatch: kernel size {} in level {} does not return a suitable size for the output'.format(k, i)
+        out_dim.append(int(o))
+    return out_dim
