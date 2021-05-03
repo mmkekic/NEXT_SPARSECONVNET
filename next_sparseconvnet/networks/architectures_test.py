@@ -14,11 +14,11 @@ def test_UNet(MCdataset):
     init_conv_nplanes = 4
     init_conv_kernel = 3
     kernel_sizes = [7, 5, 3]
-    stride = 2
+    stride_sizes = [2, 2]
     basic_num = 3
     nclasses = 3
 
-    net = UNet(spatial_size, init_conv_nplanes, init_conv_kernel, kernel_sizes, stride, basic_num, nclasses = nclasses)
+    net = UNet(spatial_size, init_conv_nplanes, init_conv_kernel, kernel_sizes, stride_sizes, basic_num, nclasses = nclasses)
 
     last_basic = []
     net.basic_up[0][2].add.register_forward_hook(lambda model, input, output: last_basic.append([output.spatial_size, output.features.shape]))
