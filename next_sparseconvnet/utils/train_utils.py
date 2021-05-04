@@ -1,5 +1,6 @@
 import numpy as np
 import torch
+import sys
 import sparseconvnet as scn
 from .data_loaders import DataGen, collatefn, LabelType
 from next_sparseconvnet.networks.architectures import UNet
@@ -9,6 +10,7 @@ def IoU(true, pred, nclass = 3):
         Intersection over union is a metric for semantic segmentation.
         It returns a IoU value for each class of our input tensors/arrays.
     """
+    eps = sys.float_info.epsilon
     confusion_matrix = np.zeros((nclass, nclass))
 
     for i in range(len(true)):
@@ -16,7 +18,7 @@ def IoU(true, pred, nclass = 3):
 
     IoU = []
     for i in range(nclass):
-        IoU.append(confusion_matrix[i, i]/(sum(confusion_matrix[:, i]) + sum(confusion_matrix[i, :]) - confusion_matrix[i, i]))
+        IoU.append((confusion_matrix[i, i] + eps) / (sum(confusion_matrix[:, i]) + sum(confusion_matrix[i, :]) - confusion_matrix[i, i] + eps))
     return IoU
 
 
