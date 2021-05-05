@@ -63,7 +63,7 @@ class UNet(torch.nn.Module):
                 Number of planes that enter the UNet. The default is 1.
         '''
 
-        bottom_spatial_size = calculate_ouput_dimension(spatial_size, kernel_sizes, stride_sizes)
+        bottom_spatial_size = calculate_output_dimension(spatial_size, kernel_sizes, stride_sizes)
 
         torch.nn.Module.__init__(self)
 
