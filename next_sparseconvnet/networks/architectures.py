@@ -1,7 +1,7 @@
 
 import torch
 import sparseconvnet as scn
-from .building_blocks import ResidualBlock_downsample, ResidualBlock_basic, ResidualBlock_upsample, ConvBNBlock
+from .building_blocks import ResidualBlock_downsample, ResidualBlock_basic, ResidualBlock_upsample, ConvBNBlock, calculate_output_dimension
 
 class UNet(torch.nn.Module):
     '''
@@ -63,11 +63,7 @@ class UNet(torch.nn.Module):
                 Number of planes that enter the UNet. The default is 1.
         '''
 
-        #Assure that kernel sizes are suitable for our input size
-        for o in spatial_size:
-            for i, k in enumerate(kernel_sizes[:-1]):
-                o = (o - k)/stride + 1
-                assert o == int(o), 'Shape mismatch: kernel size {} in level {} does not return a suitable size for the output'.format(k, i)
+        bottom_spatial_size = calculate_output_dimension(spatial_size, kernel_sizes, stride_sizes)
 
         torch.nn.Module.__init__(self)
 
