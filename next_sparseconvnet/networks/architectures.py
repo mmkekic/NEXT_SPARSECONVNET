@@ -14,14 +14,15 @@ class UNet(torch.nn.Module):
         ----------
         spatial_size : tuple
             The spatial size of the input layer. Size of the tuple is also the dimension.
-        inplanes : int
+        init_conv_nplaness : int
             Number of planes we want after the initial SubmanifoldConvolution, that is, to begin downsampling.
-        kernel : list
-            Size of the kernels applied in each layer or block. Its length also indicates the level depth of the UNet.
-        stride : int
-            Applied stride in every layer or block.
-        conv_kernel : int
+        init_conv_kernel : int
             Kernel for the first convolutional layer.
+        kernel_sizes : list
+            Sizes of the kernels applied in each layer or block. Its length also indicates the level depth of the UNet.
+            Last element corresponds just to the kernel of the basic block in the bottom of the UNet.
+        stride_sizes : list
+            Sizes of the strides applied in each downsample/upsample.
         basic_num : int
             Number of times a basic residual block is passed in each level.
         nclasses : int, optional
@@ -37,7 +38,7 @@ class UNet(torch.nn.Module):
             Passes the input through the UNet
      '''
 
-    def __init__(self, spatial_size, init_conv_nplanes, init_conv_kernel, kernel_sizes, stride, basic_num, nclasses = 3, dim = 3, start_planes = 1):
+    def __init__(self, spatial_size, init_conv_nplanes, init_conv_kernel, kernel_sizes, stride_sizes, basic_num, nclasses = 3, dim = 3, start_planes = 1):
         '''
             Parameters
             ----------
@@ -48,10 +49,10 @@ class UNet(torch.nn.Module):
             init_conv_kernel : int
                 Kernel for the first convolutional layer.
             kernel_sizes : list
-                Size of the kernels applied in each layer or block. Its length also indicates the level depth of the UNet.
+                Sizes of the kernels applied in each layer or block. Its length also indicates the level depth of the UNet.
                 Last element corresponds just to the kernel of the basic block in the bottom of the UNet.
-            stride : int
-                Applied stride in every layer or block.
+            stride_sizes : list
+                Sizes of the strides applied in each downsample/upsample.
             basic_num : int
                 Number of times a basic residual block is passed in each level.
             nclasses : int, optional
@@ -93,8 +94,8 @@ class UNet(torch.nn.Module):
             for j in range(basic_num):
                 self.basic_down[i].append(ResidualBlock_basic(inplanes, kernel_sizes[i])) #basic blocks for downsample branch
                 self.basic_up[i].append(ResidualBlock_basic(inplanes, kernel_sizes[i])) #basic blocks for upsample branch
-            self.downsample.append(ResidualBlock_downsample(inplanes, kernel_sizes[i], stride)) #downsamples
-            self.upsample.append(ResidualBlock_upsample(2 * inplanes, kernel_sizes[i], stride)) #upsamples, backwards
+            self.downsample.append(ResidualBlock_downsample(inplanes, kernel_sizes[i], stride_sizes[i])) #downsamples
+            self.upsample.append(ResidualBlock_upsample(2 * inplanes, kernel_sizes[i], stride_sizes[i])) #upsamples, backwards
 
             inplanes = inplanes * 2
 
