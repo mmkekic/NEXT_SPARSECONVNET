@@ -80,3 +80,14 @@ def test_ConvBNBlock(MCdataset):
     for i, size in enumerate(spatial_size):
         assert out.spatial_size[i] == size
     assert out_with_stride.spatial_size[i] == (size - kernel) / stride + 1
+
+
+def test_calculate_ouput_dimension():
+    spatial_size = (561, 561, 561)
+    kernel_sizes = [9, 7, 5, 3, 3]
+    stride_sizes = [4, 2, 2, 2]
+    with pytest.raises(AssertionError):
+        calculate_output_dimension(spatial_size, kernel_sizes, stride_sizes)
+
+    spatial_size = (289, 417, 449)
+    assert calculate_output_dimension(spatial_size, kernel_sizes, stride_sizes) == [7, 11, 12]
