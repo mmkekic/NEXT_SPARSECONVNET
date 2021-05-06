@@ -22,7 +22,7 @@ def IoU(true, pred, nclass = 3):
     return IoU
 
 
-def train_one_epoch(epoch_id, net, criterion, optimizer, loader):
+def train_one_epoch_segmentation(epoch_id, net, criterion, optimizer, loader):
     """
         Trains the net for all the train data one time
     """
@@ -58,7 +58,7 @@ def train_one_epoch(epoch_id, net, criterion, optimizer, loader):
         return loss_epoch, iou_epoch
 
 
-def valid_one_epoch(net, loader):
+def valid_one_epoch_segmentation(net, loader):
     """
         Computes loss and IoU for all the validation data
     """
