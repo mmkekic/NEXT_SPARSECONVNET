@@ -49,11 +49,10 @@ def train_one_epoch_segmentation(epoch_id, net, criterion, optimizer, loader):
         prediction = torch.argmax(softmax(output), 1)
         iou_epoch.append(IoU(label.cpu(), prediction.cpu()))
 
-        if batchid%2==0:
-            progress = f"Train Epoch: {epoch_id} [{batchid*batch_size:5}/{len(loader.dataset)}" +\
-                f" ({int(100*batchid/len(loader)):2}%)]"
+        if batchid%(len(loader) - 1) == 0 and batchid != 0:
+            epoch_ = f"Train Epoch: {epoch_id}"
             loss_ = f"\t Loss: {loss.item():.6f}"
-            print(progress + loss_)
+            print(epoch_ + loss_)
 
         return loss_epoch, iou_epoch
 
