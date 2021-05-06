@@ -29,7 +29,6 @@ def train_one_epoch_segmentation(epoch_id, net, criterion, optimizer, loader):
     net.train()
     loss_epoch, iou_epoch = 0, [0, 0, 0]
     for batchid, (coord, ener, label, event) in enumerate(loader):
-        label = label.type(torch.LongTensor) #quitar esto una vez se corrija en el collate
         batch_size = len(event)
         ener, label = ener.cuda(), label.cuda()
 
