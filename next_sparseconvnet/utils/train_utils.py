@@ -27,7 +27,7 @@ def train_one_epoch_segmentation(epoch_id, net, criterion, optimizer, loader):
         Trains the net for all the train data one time
     """
     net.train()
-    loss_epoch, iou_epoch = [], []
+    loss_epoch, iou_epoch = 0, [0, 0, 0]
     for batchid, (coord, ener, label, event) in enumerate(loader):
         label = label.type(torch.LongTensor) #quitar esto una vez se corrija en el collate
         batch_size = len(event)
@@ -42,16 +42,18 @@ def train_one_epoch_segmentation(epoch_id, net, criterion, optimizer, loader):
 
         optimizer.step()
 
-        loss_epoch.append(loss.item())
+        loss_epoch += loss.item()
 
         #IoU
         softmax = torch.nn.Softmax(dim = 1)
         prediction = torch.argmax(softmax(output), 1)
-        iou_epoch.append(IoU(label.cpu(), prediction.cpu()))
+        iou_epoch = [a + b for a, b in zip(iou_epoch, IoU(label.cpu(), prediction.cpu()))]
 
         if batchid%(len(loader) - 1) == 0 and batchid != 0:
+            loss_epoch = loss_epoch / len(loader)
+            iou_epoch = [a / len(loader) for a in iou_epoch]
             epoch_ = f"Train Epoch: {epoch_id}"
-            loss_ = f"\t Loss: {loss.item():.6f}"
+            loss_ = f"\t Loss: {loss_epoch:.6f}"
             print(epoch_ + loss_)
 
         return loss_epoch, iou_epoch
@@ -62,7 +64,7 @@ def valid_one_epoch_segmentation(net, loader):
         Computes loss and IoU for all the validation data
     """
     net.eval()
-    loss_epoch, valid_epoch = [], []
+    loss_epoch, iou_epoch = 0, [0, 0, 0]
     with torch.autograd.no_grad():
         for batchid, (coord, ener, label, event) in enumerate(loader):
             batch_size = len(event)
@@ -72,10 +74,17 @@ def valid_one_epoch_segmentation(net, loader):
 
             loss = criterion(output, label)
 
-            loss_epoch.append(loss.item())
+            loss_epoch += loss.item()
 
             #IoU
             softmax = torch.nn.Softmax(dim = 1)
             prediction = torch.argmax(softmax(output), 1)
-            iou_epoch.append(IoU(label.cpu(), prediction.cpu()))
-    return loss_epoch, valid_epoch
+            iou_epoch = [a + b for a, b in zip(iou_epoch, IoU(label.cpu(), prediction.cpu()))]
+
+            if batchid%(len(loader) - 1) == 0 and batchid != 0:
+                loss_epoch = loss_epoch / len(loader)
+                iou_epoch = [a / len(loader) for a in iou_epoch]
+                loss_ = f"\t Validation Loss: {loss_epoch:.6f}"
+                print(loss_)
+
+    return loss_epoch, iou_epoch
