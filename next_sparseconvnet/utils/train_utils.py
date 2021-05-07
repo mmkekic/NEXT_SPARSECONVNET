@@ -55,7 +55,7 @@ def train_one_epoch_segmentation(epoch_id, net, criterion, optimizer, loader):
             loss_ = f"\t Loss: {loss_epoch:.6f}"
             print(epoch_ + loss_)
 
-        return loss_epoch, iou_epoch
+    return loss_epoch, iou_epoch
 
 
 def valid_one_epoch_segmentation(net, criterion, loader):
