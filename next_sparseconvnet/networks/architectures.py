@@ -234,7 +234,7 @@ class ResNet(torch.nn.Module):
         self.linear2 = torch.nn.Linear(32, 1, nclasses)
 
     def forward(self, x):
-    '''
+        '''
         Passes x through the net.
 
         Parameters
@@ -248,22 +248,22 @@ class ResNet(torch.nn.Module):
         x : torch.Tensor
             A tensor with size [features_number, nclasses].
 
-    '''
-    x = self.inp(x)
-    x = self.convBN(x)
+        '''
+        x = self.inp(x)
+        x = self.convBN(x)
 
-    for i in range(self.level_depth - 1):
-        for j in range(self.basic_num):
-            x = self.basic[i][j](x)
-        x = self.downsample[i](x)
+        for i in range(self.level_depth - 1):
+            for j in range(self.basic_num):
+                x = self.basic[i][j](x)
+            x = self.downsample[i](x)
 
-    for i in range(self.basic_num):
-        x = self.bottom[i](x)
+        for i in range(self.basic_num):
+            x = self.bottom[i](x)
 
-    x = self.max(x)
-    x = self.sparse(x)
-    x = x.squeeze()
-    x = self.linear1(x)
-    x = self.linear2(x)
+        x = self.max(x)
+        x = self.sparse(x)
+        x = x.squeeze()
+        x = self.linear1(x)
+        x = self.linear2(x)
 
-    return x
+        return x
