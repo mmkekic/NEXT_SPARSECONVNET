@@ -58,7 +58,7 @@ def train_one_epoch_segmentation(epoch_id, net, criterion, optimizer, loader):
         return loss_epoch, iou_epoch
 
 
-def valid_one_epoch_segmentation(net, loader):
+def valid_one_epoch_segmentation(net, criterion, loader):
     """
         Computes loss and IoU for all the validation data
     """
