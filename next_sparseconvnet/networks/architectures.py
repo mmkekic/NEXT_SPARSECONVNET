@@ -148,23 +148,53 @@ class UNet(torch.nn.Module):
 
 class ResNet(torch.nn.Module):
     '''
-        This class implements a net structure built with ResNet blocks. It takes a tuple of (coordinates, features)
-        and passes it through the ResNet.
+    This class implements a net structure built with ResNet blocks. It takes a tuple of (coordinates, features)
+    and passes it through the ResNet.
 
-        ...
+    ...
 
-        Attributes
+    Attributes
+    ----------
+    spatial_size : tuple
+    The spatial size of the input layer. Size of the tuple is also the dimension.
+    inplanes : int
+        Number of planes we want after the initial SubmanifoldConvolution, that is, to begin downsampling.
+    kernel : list
+        Size of the kernels applied in each layer or block. Its length also indicates the level depth of the net.
+    stride : int
+        Applied stride in every layer or block.
+    conv_kernel : int
+        Kernel for the first convolutional layer.
+    basic_num : int
+        Number of times a basic residual block is passed in each level.
+    nclasses : int, optional
+        Number of output classes for predictions. The default is 2.
+    dim : int, optional
+        Number of dimensions of the input. The default is 3.
+    start_planes : int, optional
+        Number of planes that enter the ResNet. The default is 1.
+
+    Methods
+    -------
+    forward(x)
+        Passes the input through the ResNet
+    '''
+    def __init__(self, spatial_size, init_conv_nplanes, init_conv_kernel, kernel_sizes, stride_sizes, basic_num, nlinear = 32, nclasses = 2, dim = 3, start_planes = 1):
+        '''
+        Parameters
         ----------
         spatial_size : tuple
-        The spatial size of the input layer. Size of the tuple is also the dimension.
-        inplanes : int
+            The spatial size of the input layer. Size of the tuple is also the dimension.
+        init_conv_nplaness : int
             Number of planes we want after the initial SubmanifoldConvolution, that is, to begin downsampling.
-        kernel : list
-            Size of the kernels applied in each layer or block. Its length also indicates the level depth of the net.
-        stride : int
-            Applied stride in every layer or block.
-        conv_kernel : int
+        init_conv_kernel : int
             Kernel for the first convolutional layer.
+        kernel_sizes : list
+            Size of the kernels applied in each layer or block. Its length also indicates the level depth of the net.
+            Last element corresponds just to the kernel of the basic block in the bottom of the net.
+        stride_sizes : list
+            Sizes of the kernels applied in each layer or block. Its length also indicates the level depth of the net.
+            Last element corresponds just to the kernel of the basic block in the bottom of the net.
         basic_num : int
             Number of times a basic residual block is passed in each level.
         nclasses : int, optional
@@ -172,37 +202,7 @@ class ResNet(torch.nn.Module):
         dim : int, optional
             Number of dimensions of the input. The default is 3.
         start_planes : int, optional
-            Number of planes that enter the ResNet. The default is 1.
-
-        Methods
-        -------
-        forward(x)
-            Passes the input through the ResNet
-    '''
-    def __init__(self, spatial_size, init_conv_nplanes, init_conv_kernel, kernel_sizes, stride_sizes, basic_num, nclasses = 2, dim = 3, start_planes = 1):
-        '''
-            Parameters
-            ----------
-            spatial_size : tuple
-                The spatial size of the input layer. Size of the tuple is also the dimension.
-            init_conv_nplaness : int
-                Number of planes we want after the initial SubmanifoldConvolution, that is, to begin downsampling.
-            init_conv_kernel : int
-                Kernel for the first convolutional layer.
-            kernel_sizes : list
-                Size of the kernels applied in each layer or block. Its length also indicates the level depth of the net.
-                Last element corresponds just to the kernel of the basic block in the bottom of the net.
-            stride_sizes : list
-                Sizes of the kernels applied in each layer or block. Its length also indicates the level depth of the net.
-                Last element corresponds just to the kernel of the basic block in the bottom of the net.
-            basic_num : int
-                Number of times a basic residual block is passed in each level.
-            nclasses : int, optional
-                Number of output classes for predictions. The default is 2.
-            dim : int, optional
-                Number of dimensions of the input. The default is 3.
-            start_planes : int, optional
-                Number of planes that enter the net. The default is 1.
+            Number of planes that enter the net. The default is 1.
         '''
         torch.nn.Module.__init__(self)
 
