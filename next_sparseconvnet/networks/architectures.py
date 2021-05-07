@@ -225,8 +225,8 @@ class ResNet(torch.nn.Module):
 
             inplanes = inplanes * 2
 
-            for j in range(basic_num):
-                self.bottom.append(ResidualBlock_basic(inplanes, kernel_sizes[-1]))
+        for j in range(basic_num):
+            self.bottom.append(ResidualBlock_basic(inplanes, kernel_sizes[-1]))
 
         self.max     = scn.MaxPooling(dim,out_size,1)
         self.sparse  = scn.SparseToDense(dim,inplanes)
