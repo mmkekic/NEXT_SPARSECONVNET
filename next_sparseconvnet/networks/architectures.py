@@ -216,7 +216,7 @@ class ResNet(torch.nn.Module):
         self.downsample = torch.nn.ModuleList([])
         self.basic      = torch.nn.ModuleList([torch.nn.ModuleList([]) for i in range(self.level_depth - 1)])
         self.bottom     = torch.nn.ModuleList([])
-
+        out_size = (calculate_output_dimension(spatial_size, kernel_sizes, stride_sizes))
         for i in range(self.level_depth - 1):
             for j in range(basic_num):
                 self.basic[i].append(ResidualBlock_basic(inplanes, kernel_sizes[i]))
@@ -228,7 +228,7 @@ class ResNet(torch.nn.Module):
             for j in range(basic_num):
                 self.bottom.append(ResidualBlock_basic(inplanes, kernel_sizes[-1]))
 
-        self.max     = scn.MaxPooling(dim,max(calculate_output_dimension(spatial_size, kernel_sizes, stride_sizes)),1)
+        self.max     = scn.MaxPooling(dim,out_size,1)
         self.sparse  = scn.SparseToDense(dim,inplanes)
         self.linear1 = torch.nn.Linear(inplanes, 32, nclasses)
         self.linear2 = torch.nn.Linear(32, 1, nclasses)
