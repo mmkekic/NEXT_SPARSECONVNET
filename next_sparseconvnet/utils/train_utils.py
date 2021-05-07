@@ -19,15 +19,15 @@ def IoU(true, pred, nclass = 3):
     IoU = []
     for i in range(nclass):
         IoU.append((confusion_matrix[i, i] + eps) / (sum(confusion_matrix[:, i]) + sum(confusion_matrix[i, :]) - confusion_matrix[i, i] + eps))
-    return IoU
+    return np.array(IoU)
 
 
-def train_one_epoch_segmentation(epoch_id, net, criterion, optimizer, loader):
+def train_one_epoch_segmentation(epoch_id, net, criterion, optimizer, loader, nclass = 3):
     """
         Trains the net for all the train data one time
     """
     net.train()
-    loss_epoch, iou_epoch = 0, [0, 0, 0]
+    loss_epoch, iou_epoch = 0, np.zeros(nclass)
     for batchid, (coord, ener, label, event) in enumerate(loader):
         batch_size = len(event)
         ener, label = ener.cuda(), label.cuda()
@@ -46,11 +46,11 @@ def train_one_epoch_segmentation(epoch_id, net, criterion, optimizer, loader):
         #IoU
         softmax = torch.nn.Softmax(dim = 1)
         prediction = torch.argmax(softmax(output), 1)
-        iou_epoch = [a + b for a, b in zip(iou_epoch, IoU(label.cpu(), prediction.cpu()))]
+        iou_epoch += IoU(label.cpu(), prediction.cpu(), nclass = nclass)
 
         if batchid%(len(loader) - 1) == 0 and batchid != 0:
             loss_epoch = loss_epoch / len(loader)
-            iou_epoch = [a / len(loader) for a in iou_epoch]
+            iou_epoch = iou_epoch / len(loader)
             epoch_ = f"Train Epoch: {epoch_id}"
             loss_ = f"\t Loss: {loss_epoch:.6f}"
             print(epoch_ + loss_)
@@ -58,12 +58,12 @@ def train_one_epoch_segmentation(epoch_id, net, criterion, optimizer, loader):
     return loss_epoch, iou_epoch
 
 
-def valid_one_epoch_segmentation(net, criterion, loader):
+def valid_one_epoch_segmentation(net, criterion, loader, nclass = 3):
     """
         Computes loss and IoU for all the validation data
     """
     net.eval()
-    loss_epoch, iou_epoch = 0, [0, 0, 0]
+    loss_epoch, iou_epoch = 0, np.zeros(nclass)
     with torch.autograd.no_grad():
         for batchid, (coord, ener, label, event) in enumerate(loader):
             batch_size = len(event)
@@ -78,11 +78,11 @@ def valid_one_epoch_segmentation(net, criterion, loader):
             #IoU
             softmax = torch.nn.Softmax(dim = 1)
             prediction = torch.argmax(softmax(output), 1)
-            iou_epoch = [a + b for a, b in zip(iou_epoch, IoU(label.cpu(), prediction.cpu()))]
+            iou_epoch += IoU(label.cpu(), prediction.cpu())
 
             if batchid%(len(loader) - 1) == 0 and batchid != 0:
                 loss_epoch = loss_epoch / len(loader)
-                iou_epoch = [a / len(loader) for a in iou_epoch]
+                iou_epoch = iou_epoch / len(loader)
                 loss_ = f"\t Validation Loss: {loss_epoch:.6f}"
                 print(loss_)
 
