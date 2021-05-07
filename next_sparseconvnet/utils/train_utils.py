@@ -48,12 +48,11 @@ def train_one_epoch_segmentation(epoch_id, net, criterion, optimizer, loader, nc
         prediction = torch.argmax(softmax(output), 1)
         iou_epoch += IoU(label.cpu(), prediction.cpu(), nclass = nclass)
 
-        if batchid%(len(loader) - 1) == 0 and batchid != 0:
-            loss_epoch = loss_epoch / len(loader)
-            iou_epoch = iou_epoch / len(loader)
-            epoch_ = f"Train Epoch: {epoch_id}"
-            loss_ = f"\t Loss: {loss_epoch:.6f}"
-            print(epoch_ + loss_)
+    loss_epoch = loss_epoch / len(loader)
+    iou_epoch = iou_epoch / len(loader)
+    epoch_ = f"Train Epoch: {epoch_id}"
+    loss_ = f"\t Loss: {loss_epoch:.6f}"
+    print(epoch_ + loss_)
 
     return loss_epoch, iou_epoch
 
@@ -80,10 +79,9 @@ def valid_one_epoch_segmentation(net, criterion, loader, nclass = 3):
             prediction = torch.argmax(softmax(output), 1)
             iou_epoch += IoU(label.cpu(), prediction.cpu())
 
-            if batchid%(len(loader) - 1) == 0 and batchid != 0:
-                loss_epoch = loss_epoch / len(loader)
-                iou_epoch = iou_epoch / len(loader)
-                loss_ = f"\t Validation Loss: {loss_epoch:.6f}"
-                print(loss_)
+        loss_epoch = loss_epoch / len(loader)
+        iou_epoch = iou_epoch / len(loader)
+        loss_ = f"\t Validation Loss: {loss_epoch:.6f}"
+        print(loss_)
 
     return loss_epoch, iou_epoch
