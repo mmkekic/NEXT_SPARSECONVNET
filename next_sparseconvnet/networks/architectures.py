@@ -230,8 +230,8 @@ class ResNet(torch.nn.Module):
 
         self.max     = scn.MaxPooling(dim,out_size,1)
         self.sparse  = scn.SparseToDense(dim,inplanes)
-        self.linear1 = torch.nn.Linear(inplanes, 32, nclasses)
-        self.linear2 = torch.nn.Linear(32, 1, nclasses)
+        self.linear1 = torch.nn.Linear(inplanes, nlinear)
+        self.linear2 = torch.nn.Linear(nlinear, nclasses)
 
     def forward(self, x):
         '''
