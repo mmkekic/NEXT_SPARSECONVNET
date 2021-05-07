@@ -3,7 +3,8 @@ import torch
 import sparseconvnet as scn
 
 from next_sparseconvnet.utils.data_loaders import DataGen, collatefn, LabelType
-from .architectures import UNet
+from . architectures import UNet
+from . architectures import ResNet
 
 
 def test_UNet(MCdataset):
@@ -36,3 +37,24 @@ def test_UNet(MCdataset):
     assert last_basic[0][1][1] == init_conv_nplanes
     assert out.size()[0] == coord.size()[0]
     assert out.size()[1] == nclasses
+
+
+def test_ResNet(MCdataset):
+    datagen = DataGen(MCdataset, LabelType.Classification)
+    data = [datagen[i] for i in range(3)]
+    coord, ener, lab, ev = collatefn(data)
+    spatial_size = (51, 51, 51)
+    init_conv_nplanes = 4
+    init_conv_kernel = 3
+    kernel_sizes = [7, 5, 3]
+    stride_sizes = [2, 2]
+    basic_num = 3
+    nclasses = 2
+    nlinear = 8
+
+    net = ResNet(spatial_size, init_conv_nplanes, init_conv_kernel, kernel_sizes, stride_sizes, basic_num, nlinear = nlinear, nclasses = nclasses)
+
+    out = net((coord, ener))
+
+    assert out.shape[0] == len(lab)
+    assert out.shape[1] == nclasses
