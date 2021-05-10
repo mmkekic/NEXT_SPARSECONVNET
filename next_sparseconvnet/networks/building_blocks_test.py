@@ -82,7 +82,7 @@ def test_ConvBNBlock(MCdataset):
     assert out_with_stride.spatial_size[i] == (size - kernel) / stride + 1
 
 
-def test_calculate_ouput_dimension():
+def test_calculate_output_dimension():
     spatial_size = (561, 561, 561)
     kernel_sizes = [9, 7, 5, 3, 3]
     stride_sizes = [4, 2, 2, 2]

@@ -84,6 +84,6 @@ def collatefn(batch):
 
     coords = torch.tensor(np.concatenate(coords, axis=0), dtype = torch.long)
     energs = torch.tensor(np.concatenate(energs, axis=0), dtype = torch.float).unsqueeze(-1)
-    labels = torch.tensor(np.concatenate(labels, axis=0), dtype = torch.int)
+    labels = torch.tensor(np.concatenate(labels, axis=0), dtype = torch.long)
 
     return  coords, energs, labels, events
