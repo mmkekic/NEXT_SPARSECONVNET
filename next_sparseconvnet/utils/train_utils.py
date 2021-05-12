@@ -98,7 +98,8 @@ def train_segmentation(nepoch,
                        optimizer,
                        checkpoint_dir,
                        tensorboard_dir,
-                       nevents_train = None
+                       num_workers,
+                       nevents_train = None,
                        nevents_valid = None):
     """
         Trains the net nepoch times and saves the model anytime the validation loss decreases
@@ -109,17 +110,17 @@ def train_segmentation(nepoch,
     loader_train = torch.utils.data.DataLoader(train_gen,
                                                batch_size = train_batch_size,
                                                shuffle = True,
-                                               num_workers=1,
-                                               collate_fn=collatefn,
-                                               drop_last=True,
-                                               pin_memory=False)
+                                               num_workers = num_workers,
+                                               collate_fn = collatefn,
+                                               drop_last = True,
+                                               pin_memory = False)
     loader_valid = torch.utils.data.DataLoader(valid_gen,
                                                batch_size = valid_batch_size,
                                                shuffle = True,
-                                               num_workers=1,
-                                               collate_fn=collatefn,
-                                               drop_last=True,
-                                               pin_memory=False)
+                                               num_workers = num_workers,
+                                               collate_fn = collatefn,
+                                               drop_last = True,
+                                               pin_memory = False)
 
     start_loss = np.inf
     writer = SummaryWriter(tensorboard_dir)
