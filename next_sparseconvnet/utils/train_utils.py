@@ -88,15 +88,36 @@ def valid_one_epoch_segmentation(net, criterion, loader, nclass = 3):
     return loss_epoch, iou_epoch
 
 
-def train_segmentation(nepoch, train_data_path, valid_data_path, train_batch_size, valid_batch_size, net, criterion, optimizer, checkpoint_dir, tensorboard_dir):
+def train_segmentation(nepoch,
+                       train_data_path,
+                       valid_data_path,
+                       train_batch_size,
+                       valid_batch_size,
+                       net,
+                       criterion,
+                       optimizer,
+                       checkpoint_dir,
+                       tensorboard_dir):
     """
         Trains the net nepoch times and saves the model anytime the validation loss decreases
     """
     train_gen = DataGen(train_data_path, LabelType.Segmentation, nevents = 100)
     valid_gen = DataGen(valid_data_path, LabelType.Segmentation, nevents = 10)
 
-    loader_train = torch.utils.data.DataLoader(train_gen, batch_size = train_batch_size, shuffle = True, num_workers=1, collate_fn=collatefn, drop_last=True, pin_memory=False)
-    loader_valid = torch.utils.data.DataLoader(valid_gen, batch_size = valid_batch_size, shuffle = True, num_workers=1, collate_fn=collatefn, drop_last=True, pin_memory=False)
+    loader_train = torch.utils.data.DataLoader(train_gen,
+                                               batch_size = train_batch_size,
+                                               shuffle = True,
+                                               num_workers=1,
+                                               collate_fn=collatefn,
+                                               drop_last=True,
+                                               pin_memory=False)
+    loader_valid = torch.utils.data.DataLoader(valid_gen,
+                                               batch_size = valid_batch_size,
+                                               shuffle = True,
+                                               num_workers=1,
+                                               collate_fn=collatefn,
+                                               drop_last=True,
+                                               pin_memory=False)
 
     start_loss = np.inf
     writer = SummaryWriter(tensorboard_dir)
