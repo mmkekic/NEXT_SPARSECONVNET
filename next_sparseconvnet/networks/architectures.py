@@ -1,7 +1,20 @@
 
 import torch
+from   enum import auto
 import sparseconvnet as scn
-from .building_blocks import ResidualBlock_downsample, ResidualBlock_basic, ResidualBlock_upsample, ConvBNBlock, calculate_output_dimension
+from . building_blocks import ResidualBlock_downsample
+from . building_blocks import ResidualBlock_basic
+from . building_blocks import ResidualBlock_upsample
+from . building_blocks import ConvBNBlock
+from . building_blocks import calculate_output_dimension
+
+from invisible_cities.types.ic_types import AutoNameEnumBase
+
+class NetArchitecture(AutoNameEnumBase):
+    UNet   = auto()
+    ResNet = auto()
+
+
 
 class UNet(torch.nn.Module):
     '''
