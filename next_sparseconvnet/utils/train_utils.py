@@ -94,7 +94,8 @@ def save_checkpoint(state, filename='checkpoint.pth.tar'):
 
 
 
-def train_segmentation(nepoch,
+def train_segmentation(*,
+                       nepoch,
                        train_data_path,
                        valid_data_path,
                        train_batch_size,
