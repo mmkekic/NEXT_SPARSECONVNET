@@ -88,6 +88,12 @@ def valid_one_epoch_segmentation(net, criterion, loader, nclass = 3):
     return loss_epoch, iou_epoch
 
 
+
+def save_checkpoint(state, filename='checkpoint.pth.tar'):
+    torch.save(state, filename)
+
+
+
 def train_segmentation(nepoch,
                        train_data_path,
                        valid_data_path,
