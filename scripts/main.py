@@ -13,6 +13,8 @@ from argparse     import Namespace
 
 from next_sparseconvnet.utils.data_loaders     import LabelType
 from next_sparseconvnet.networks.architectures import NetArchitecture
+from next_sparseconvnet.networks.architectures import UNet
+
 from next_sparseconvnet.utils.train_utils      import train_segmentation
 
 def is_valid_action(parser, arg):
@@ -64,6 +66,10 @@ if __name__ == '__main__':
                    parameters.basic_num,
                    momentum = parameters.momentum)
         net = net.cuda()
+
+    if parameters.saved_weights:
+        net.load_state_dict(torch.load(parameters.state_dict)['state_dict'])
+        print('weights loaded')
 
     criterion = torch.nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(net.parameters(),
