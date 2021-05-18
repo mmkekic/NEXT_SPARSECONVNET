@@ -11,9 +11,9 @@ import torch
 from argparse     import ArgumentParser
 from argparse     import Namespace
 
-from next_sparseconvnet.utils.data_loaders     import * #LabelType
-from next_sparseconvnet.networks.architectures import * #NetArchitecture
-from next_sparseconvnet.utils.train_utils      import *
+from next_sparseconvnet.utils.data_loaders     import LabelType
+from next_sparseconvnet.networks.architectures import NetArchitecture
+from next_sparseconvnet.utils.train_utils      import train_segmentation
 
 def is_valid_action(parser, arg):
     if not arg in ['train']:#, 'predict']:
@@ -32,7 +32,7 @@ def get_params(confname):
     parameters = {}
 
     builtins = __builtins__.__dict__.copy()
-    #add enum classes
+
     builtins['LabelType']       = LabelType
     builtins['NetArchitecture'] = NetArchitecture
 
@@ -55,8 +55,6 @@ if __name__ == '__main__':
     action   = args.action
     parameters = get_params(confname)
 
-    # make sure LabelType and NetArchitectures are consistent
-    # construct the network
     if parameters.netarch == NetArchitecture.UNet:
         net = UNet(parameters.spatial_size,
                    parameters.init_conv_nplanes,
@@ -74,7 +72,7 @@ if __name__ == '__main__':
                                  eps = parameters.eps,
                                  weight_decay = parameters.weight_decay)
 
-    # if action is train:
+
     if action == 'train':
         train_segmentation(nepoch = parameters.nepoch,
                            train_data_path = parameters.train_file,
@@ -89,5 +87,3 @@ if __name__ == '__main__':
                            num_workers = parameters.num_workers,
                            nevents_train = parameters.nevents_train,
                            nevents_valid = parameters.nevents_valid)
-
-    # else if prediction : still not implemented
