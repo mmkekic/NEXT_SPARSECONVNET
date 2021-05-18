@@ -3,15 +3,15 @@ import sparseconvnet as scn
 
 
 class ResidualBlock_downsample(torch.nn.Module):
-    def __init__(self, inplanes, kernel, stride, bias = False, dim = 3):
+    def __init__(self, inplanes, kernel, stride, bias = False, dim = 3, momentum = 0.99):
         torch.nn.Module.__init__(self)
 
         outplanes = 2 * inplanes
 
         #f1
-        self.bnr1    = scn.BatchNormReLU(inplanes)
+        self.bnr1    = scn.BatchNormReLU(inplanes, momentum = momentum)
         self.conv1   = scn.Convolution(dim, inplanes, outplanes, kernel, stride, bias)
-        self.bnr2    = scn.BatchNormReLU(outplanes)
+        self.bnr2    = scn.BatchNormReLU(outplanes, momentum = momentum)
         self.subconv = scn.SubmanifoldConvolution(dim, outplanes, outplanes, kernel, bias)
 
         #f2
@@ -36,11 +36,11 @@ class ResidualBlock_downsample(torch.nn.Module):
         return out
 
 class ResidualBlock_basic(torch.nn.Module):
-    def __init__(self, inplanes,  kernel, dim=3):
+    def __init__(self, inplanes,  kernel, dim=3, momentum = 0.99):
         torch.nn.Module.__init__(self)
-        self.bnr1 = scn.BatchNormReLU(inplanes)
+        self.bnr1 = scn.BatchNormReLU(inplanes, momentum = momentum)
         self.subconv1 = scn.SubmanifoldConvolution(dim, inplanes, inplanes, kernel, 0)
-        self.bnr2 = scn.BatchNormReLU(inplanes)
+        self.bnr2 = scn.BatchNormReLU(inplanes, momentum = momentum)
         self.subconv2 = scn.SubmanifoldConvolution(dim, inplanes, inplanes, kernel, 0)
         self.add = scn.AddTable()
 
@@ -54,15 +54,15 @@ class ResidualBlock_basic(torch.nn.Module):
         return x
 
 class ResidualBlock_upsample(torch.nn.Module):
-    def __init__(self, inplanes, kernel, stride, bias = False, dim = 3):
+    def __init__(self, inplanes, kernel, stride, bias = False, dim = 3, momentum = 0.99):
         torch.nn.Module.__init__(self)
 
         outplanes = int(inplanes / 2)
 
         #f1
-        self.bnr1      = scn.BatchNormReLU(inplanes)
+        self.bnr1      = scn.BatchNormReLU(inplanes, momentum = momentum)
         self.deconv1   = scn.Deconvolution(dim, inplanes, outplanes, kernel, stride, bias)
-        self.bnr2      = scn.BatchNormReLU(outplanes)
+        self.bnr2      = scn.BatchNormReLU(outplanes, momentum = momentum)
         self.subconv   = scn.SubmanifoldConvolution(dim, outplanes, outplanes, kernel, bias)
 
         #f2
@@ -88,13 +88,13 @@ class ResidualBlock_upsample(torch.nn.Module):
 
 
 class ConvBNBlock(torch.nn.Module):
-    def __init__(self, inplanes, outplanes, kernel, stride = 1, bias = False, dim = 3):
+    def __init__(self, inplanes, outplanes, kernel, stride = 1, bias = False, dim = 3, momentum = 0.99):
         torch.nn.Module.__init__(self)
         if stride==1:
             self.conv = scn.SubmanifoldConvolution(dim, inplanes, outplanes, kernel, bias)
         else:
             self.conv = scn.Convolution(dim, inplanes, outplanes, kernel, stride, bias)
-        self.bnr = scn.BatchNormReLU(outplanes)
+        self.bnr = scn.BatchNormReLU(outplanes, momentum = momentum)
 
     def forward(self, x):
         x = self.conv(x)
