@@ -124,7 +124,7 @@ def train_segmentation(*,
     loader_valid = torch.utils.data.DataLoader(valid_gen,
                                                batch_size = valid_batch_size,
                                                shuffle = True,
-                                               num_workers = num_workers,
+                                               num_workers = 1,
                                                collate_fn = collatefn,
                                                drop_last = True,
                                                pin_memory = False)
@@ -147,3 +147,6 @@ def train_segmentation(*,
         writer.add_scalar('loss/valid', valid_loss, i)
         for k, iou in enumerate(valid_iou):
             writer.add_scalar(f'iou/valid_{k}class', iou, i)
+
+        writer.flush()
+    writer.close()
