@@ -44,6 +44,8 @@ class UNet(torch.nn.Module):
             Number of dimensions of the input. The default is 3.
         start_planes : int, optional
             Number of planes that enter the UNet. The default is 1.
+        momentum : float, optional
+            Momentum for BatchNormalization layer. The default is 0.99.
 
         Methods
         -------
@@ -51,7 +53,7 @@ class UNet(torch.nn.Module):
             Passes the input through the UNet
      '''
 
-    def __init__(self, spatial_size, init_conv_nplanes, init_conv_kernel, kernel_sizes, stride_sizes, basic_num, nclasses = 3, dim = 3, start_planes = 1):
+    def __init__(self, spatial_size, init_conv_nplanes, init_conv_kernel, kernel_sizes, stride_sizes, basic_num, nclasses = 3, dim = 3, start_planes = 1, momentum = 0.99):
         '''
             Parameters
             ----------
@@ -74,6 +76,8 @@ class UNet(torch.nn.Module):
                 Number of dimensions of the input. The default is 3.
             start_planes : int, optional
                 Number of planes that enter the UNet. The default is 1.
+            momentum : float, optional
+                Momentum for BatchNormalization layer. The default is 0.99.
         '''
 
         bottom_spatial_size = calculate_output_dimension(spatial_size, kernel_sizes, stride_sizes)
@@ -85,7 +89,7 @@ class UNet(torch.nn.Module):
 
         #Initial layers
         self.inp     = scn.InputLayer(dim, spatial_size)
-        self.convBN  = ConvBNBlock(start_planes, init_conv_nplanes, init_conv_kernel)
+        self.convBN  = ConvBNBlock(start_planes, init_conv_nplanes, init_conv_kernel, momentum = momentum)
         inplanes = init_conv_nplanes
 
         #Final layers
@@ -101,16 +105,16 @@ class UNet(torch.nn.Module):
 
         for i in range(self.level_depth - 1):
             for j in range(basic_num):
-                self.basic_down[i].append(ResidualBlock_basic(inplanes, kernel_sizes[i])) #basic blocks for downsample branch
-                self.basic_up[i].append(ResidualBlock_basic(inplanes, kernel_sizes[i])) #basic blocks for upsample branch
-            self.downsample.append(ResidualBlock_downsample(inplanes, kernel_sizes[i], stride_sizes[i])) #downsamples
-            self.upsample.append(ResidualBlock_upsample(2 * inplanes, kernel_sizes[i], stride_sizes[i])) #upsamples, backwards
+                self.basic_down[i].append(ResidualBlock_basic(inplanes, kernel_sizes[i], momentum = momentum)) #basic blocks for downsample branch
+                self.basic_up[i].append(ResidualBlock_basic(inplanes, kernel_sizes[i], momentum = momentum)) #basic blocks for upsample branch
+            self.downsample.append(ResidualBlock_downsample(inplanes, kernel_sizes[i], stride_sizes[i], momentum = momentum)) #downsamples
+            self.upsample.append(ResidualBlock_upsample(2 * inplanes, kernel_sizes[i], stride_sizes[i], momentum = momentum)) #upsamples, backwards
 
             inplanes = inplanes * 2
 
         #Bottom layer
         for j in range(basic_num):
-            self.bottom.append(ResidualBlock_basic(inplanes, kernel_sizes[-1])) #basic blocks for the lowest layer, kernel is the last element in the list
+            self.bottom.append(ResidualBlock_basic(inplanes, kernel_sizes[-1], momentum = momentum)) #basic blocks for the lowest layer, kernel is the last element in the list
 
         self.add = scn.AddTable()
 
@@ -186,13 +190,15 @@ class ResNet(torch.nn.Module):
         Number of dimensions of the input. The default is 3.
     start_planes : int, optional
         Number of planes that enter the ResNet. The default is 1.
+    momentum : float, optional
+        Momentum for BatchNormalization layer. The default is 0.99.
 
     Methods
     -------
     forward(x)
         Passes the input through the ResNet
     '''
-    def __init__(self, spatial_size, init_conv_nplanes, init_conv_kernel, kernel_sizes, stride_sizes, basic_num, nlinear = 32, nclasses = 2, dim = 3, start_planes = 1):
+    def __init__(self, spatial_size, init_conv_nplanes, init_conv_kernel, kernel_sizes, stride_sizes, basic_num, nlinear = 32, nclasses = 2, dim = 3, start_planes = 1, momentum = 0.99):
         '''
         Parameters
         ----------
@@ -216,6 +222,8 @@ class ResNet(torch.nn.Module):
             Number of dimensions of the input. The default is 3.
         start_planes : int, optional
             Number of planes that enter the net. The default is 1.
+        momentum : float, optional
+            Momentum for BatchNormalization layer. The default is 0.99.
         '''
         torch.nn.Module.__init__(self)
 
@@ -223,7 +231,7 @@ class ResNet(torch.nn.Module):
         self.level_depth = len(kernel_sizes)
 
         self.inp     = scn.InputLayer(dim, spatial_size)
-        self.convBN  = ConvBNBlock(start_planes, init_conv_nplanes, init_conv_kernel)
+        self.convBN  = ConvBNBlock(start_planes, init_conv_nplanes, init_conv_kernel, momentum = momentum)
         inplanes     = init_conv_nplanes
 
         self.downsample = torch.nn.ModuleList([])
@@ -232,14 +240,14 @@ class ResNet(torch.nn.Module):
         out_size = (calculate_output_dimension(spatial_size, kernel_sizes, stride_sizes))
         for i in range(self.level_depth - 1):
             for j in range(basic_num):
-                self.basic[i].append(ResidualBlock_basic(inplanes, kernel_sizes[i]))
+                self.basic[i].append(ResidualBlock_basic(inplanes, kernel_sizes[i], momentum = momentum))
 
-            self.downsample.append(ResidualBlock_downsample(inplanes, kernel_sizes[i], stride_sizes[i]))
+            self.downsample.append(ResidualBlock_downsample(inplanes, kernel_sizes[i], stride_sizes[i], momentum = momentum))
 
             inplanes = inplanes * 2
 
         for j in range(basic_num):
-            self.bottom.append(ResidualBlock_basic(inplanes, kernel_sizes[-1]))
+            self.bottom.append(ResidualBlock_basic(inplanes, kernel_sizes[-1], momentum = momentum))
 
         self.max     = scn.MaxPooling(dim,out_size,1)
         self.sparse  = scn.SparseToDense(dim,inplanes)
