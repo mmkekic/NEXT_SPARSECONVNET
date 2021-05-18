@@ -16,9 +16,10 @@ from next_sparseconvnet.networks.architectures import NetArchitecture
 from next_sparseconvnet.networks.architectures import UNet
 
 from next_sparseconvnet.utils.train_utils      import train_segmentation
+from next_sparseconvnet.utils.train_utils      import predict_segmentation
 
 def is_valid_action(parser, arg):
-    if not arg in ['train']:#, 'predict']:
+    if not arg in ['train', 'predict']:
         parser.error("The action %s is not allowed!" % arg)
     else:
         return arg
@@ -71,15 +72,16 @@ if __name__ == '__main__':
         net.load_state_dict(torch.load(parameters.state_dict)['state_dict'])
         print('weights loaded')
 
-    criterion = torch.nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(net.parameters(),
-                                 lr = parameters.lr,
-                                 betas = parameters.betas,
-                                 eps = parameters.eps,
-                                 weight_decay = parameters.weight_decay)
 
 
     if action == 'train':
+        criterion = torch.nn.CrossEntropyLoss()
+        optimizer = torch.optim.Adam(net.parameters(),
+                                     lr = parameters.lr,
+                                     betas = parameters.betas,
+                                     eps = parameters.eps,
+                                     weight_decay = parameters.weight_decay)
+
         train_segmentation(nepoch = parameters.nepoch,
                            train_data_path = parameters.train_file,
                            valid_data_path = parameters.valid_file,
@@ -93,3 +95,10 @@ if __name__ == '__main__':
                            num_workers = parameters.num_workers,
                            nevents_train = parameters.nevents_train,
                            nevents_valid = parameters.nevents_valid)
+
+    if action == 'predict':
+        predict_segmentation (data_path = parameters.predict_file,
+                              output_name = parameters.out_file,
+                              net = net,
+                              batch_size = parameters.predict_batch,
+                              nevents = parameters.nevents_predict)
