@@ -69,7 +69,7 @@ if __name__ == '__main__':
         net = net.cuda()
 
     if parameters.saved_weights:
-        net.load_state_dict(torch.load(parameters.state_dict)['state_dict'])
+        net.load_state_dict(torch.load(parameters.saved_weights)['state_dict'])
         print('weights loaded')
 
 
