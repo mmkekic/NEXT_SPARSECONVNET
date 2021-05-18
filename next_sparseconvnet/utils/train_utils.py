@@ -1,10 +1,15 @@
 import numpy as np
+import pandas as pd
+import tables as tb
 import torch
 import sys
 import sparseconvnet as scn
 from .data_loaders import DataGen, collatefn, LabelType
 from next_sparseconvnet.networks.architectures import UNet
 from torch.utils.tensorboard import SummaryWriter
+
+from invisible_cities.io.dst_io import df_writer
+from invisible_cities.cities.components import index_tables
 
 def IoU(true, pred, nclass = 3):
     """
@@ -150,3 +155,37 @@ def train_segmentation(*,
 
         writer.flush()
     writer.close()
+
+
+
+def predict_segmentation(data_path, output_name, net, batch_size, nevents):
+    gen    = DataGen(data_path, LabelType.Segmentation, nevents = nevents)
+    loader = torch.utils.data.DataLoader(gen,
+                                         batch_size = batch_size,
+                                         shuffle = False,
+                                         num_workers = 1,
+                                         collate_fn = collatefn,
+                                         drop_last = False,
+                                         pin_memory = False)
+
+    net.eval()
+    start_id = 0
+    softmax = torch.nn.Softmax(dim = 1)
+    with torch.autograd.no_grad():
+        for batchid, (coord, ener, label, event) in enumerate(loader):
+            batch_size = len(event)
+            ener, label = ener.cuda(), label.cuda()
+            output = net.forward((coord, ener, batch_size))
+            y_pred = softmax(output).cpu().detach().numpy()
+
+            nclasses = y_pred.shape[1]
+            pd_dict = {f'pred_{i}':y_pred[:, i] for i in range(nclasses)}
+            cords_name = ['X', 'Y', 'Z']
+            pd_dict.update ({cords_name[i]:coord[:, i].cpu().detach().numpy() for i in range(3)})
+            pd_dict.update({'energy':ener.cpu().detach().numpy().flatten(), 'label':label.cpu().detach().numpy().flatten()})
+            pd_dict.update({'dataset_id':start_id+coord[:, -1].cpu().detach().numpy()})
+            df = pd.DataFrame.from_records(pd_dict)
+            with tb.open_file(output_name, 'a') as h5out:
+                df_writer(h5out, df, 'DATASET', 'VoxelsPred', columns_to_index=['dataset_id'])
+            start_id += batch_size
+    index_tables(output_name)
