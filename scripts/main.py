@@ -15,11 +15,14 @@ import numpy  as np
 import pandas as pd
 import tables as tb
 
+import torch
+
 from invisible_cities.io.dst_io import df_writer
 from invisible_cities.cities.components import index_tables
 
 
 from next_sparseconvnet.utils.data_loaders     import LabelType
+from next_sparseconvnet.utils.data_loaders     import weights_loss_segmentation
 from next_sparseconvnet.networks.architectures import NetArchitecture
 from next_sparseconvnet.networks.architectures import UNet
 
@@ -50,6 +53,7 @@ def get_params(confname):
     with open(full_file_name, 'r') as config_file:
         exec(config_file.read(), {'__builtins__':builtins}, parameters)
     return Namespace(**parameters)
+
 
 if __name__ == '__main__':
     # torch.backends.cudnn.enabled = True
@@ -83,7 +87,17 @@ if __name__ == '__main__':
 
 
     if action == 'train':
-        criterion = torch.nn.CrossEntropyLoss()
+        if parameters.weight_loss is True: #calculate mean using first 5000 events from file
+            print('Calculating weights')
+            weights = torch.Tensor(weights_loss_segmentation(parameters.train_file, 5000)).cuda()
+            print('Weights are', weights)
+        elif isinstance(parameters.weight_loss, list):
+            weights = torch.Tensor(parameters.weight_loss).cuda()
+            print('Read weights from config')
+        else:
+            weights = None
+
+        criterion = torch.nn.CrossEntropyLoss(weight = weights)
         optimizer = torch.optim.Adam(net.parameters(),
                                      lr = parameters.lr,
                                      betas = parameters.betas,
