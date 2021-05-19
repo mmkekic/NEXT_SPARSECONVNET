@@ -1,5 +1,6 @@
 import tables as tb
 import numpy  as np
+import pandas as pd
 import torch
 import warnings
 from enum import auto
@@ -87,3 +88,16 @@ def collatefn(batch):
     labels = torch.tensor(np.concatenate(labels, axis=0), dtype = torch.long)
 
     return  coords, energs, labels, events
+
+
+def weights_loss_segmentation(fname, nevents):
+    with tb.open_file(fname, 'r') as h5in:
+        dataset_id = h5in.root.DATASET.Voxels.read_where('dataset_id<nevents', field='dataset_id')
+        segclass   = h5in.root.DATASET.Voxels.read_where('dataset_id<nevents', field='segclass')
+
+    df = pd.DataFrame({'dataset_id':dataset_id, 'segclass':segclass})
+    nclass = max(df.segclass)+1
+    df = df.groupby('dataset_id').segclass.apply(lambda x:np.bincount(x, minlength=nclass)/len(x))
+    mean_freq = df.mean()
+    inverse_freq = 1./mean_freq
+    return inverse_freq/sum(inverse_freq)

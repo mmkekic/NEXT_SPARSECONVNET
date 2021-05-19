@@ -76,3 +76,9 @@ def test_dataget_len(MCdataset):
 def test_dataget_labeltype(MCdataset):
     with pytest.raises(ValueError, match=f'Other not recognized!'):
         datagen = DataGen(MCdataset, 'Other')
+
+
+def test_weights_loss_segmentation(MCdataset):
+    inv_weights = weights_loss_segmentation(MCdataset, 2)
+    assert len(inv_weights) == 3
+    assert sum(inv_weights) == 1
