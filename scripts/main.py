@@ -11,14 +11,23 @@ import torch
 from argparse     import ArgumentParser
 from argparse     import Namespace
 
+import numpy  as np
+import pandas as pd
+import tables as tb
+
+from invisible_cities.io.dst_io import df_writer
+from invisible_cities.cities.components import index_tables
+
+
 from next_sparseconvnet.utils.data_loaders     import LabelType
 from next_sparseconvnet.networks.architectures import NetArchitecture
 from next_sparseconvnet.networks.architectures import UNet
 
 from next_sparseconvnet.utils.train_utils      import train_segmentation
+from next_sparseconvnet.utils.train_utils      import predict_gen_segmentation
 
 def is_valid_action(parser, arg):
-    if not arg in ['train']:#, 'predict']:
+    if not arg in ['train', 'predict']:
         parser.error("The action %s is not allowed!" % arg)
     else:
         return arg
@@ -68,18 +77,19 @@ if __name__ == '__main__':
         net = net.cuda()
 
     if parameters.saved_weights:
-        net.load_state_dict(torch.load(parameters.state_dict)['state_dict'])
+        net.load_state_dict(torch.load(parameters.saved_weights)['state_dict'])
         print('weights loaded')
 
-    criterion = torch.nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(net.parameters(),
-                                 lr = parameters.lr,
-                                 betas = parameters.betas,
-                                 eps = parameters.eps,
-                                 weight_decay = parameters.weight_decay)
 
 
     if action == 'train':
+        criterion = torch.nn.CrossEntropyLoss()
+        optimizer = torch.optim.Adam(net.parameters(),
+                                     lr = parameters.lr,
+                                     betas = parameters.betas,
+                                     eps = parameters.eps,
+                                     weight_decay = parameters.weight_decay)
+
         train_segmentation(nepoch = parameters.nepoch,
                            train_data_path = parameters.train_file,
                            valid_data_path = parameters.valid_file,
@@ -93,3 +103,26 @@ if __name__ == '__main__':
                            num_workers = parameters.num_workers,
                            nevents_train = parameters.nevents_train,
                            nevents_valid = parameters.nevents_valid)
+
+    if action == 'predict':
+        gen = predict_gen_segmentation(data_path = parameters.predict_file,
+                              net = net,
+                              batch_size = parameters.predict_batch,
+                              nevents = parameters.nevents_predict)
+        coorname = ['xbin', 'ybin', 'zbin']
+        output_name = parameters.out_file
+
+        with tb.open_file(output_name, 'w') as h5out:
+            for dct in gen:
+                coords = dct.pop('coords')
+                #unpack coords and add them to dictionary
+                dct.update({coorname[i]:coords[:, i] for i in range(3)})
+                predictions = dct.pop('predictions')
+                #unpack predictions and add them back to dictionary
+                dct.update({f'class_{i}':predictions[:, i] for i in range(predictions.shape[1])})
+
+                #create pandas dataframe and save to output file
+                df = pd.DataFrame(dct)
+                df_writer(h5out, df, 'DATASET', 'VoxelsPred', columns_to_index=['dataset_id'])
+
+        index_tables(output_name)

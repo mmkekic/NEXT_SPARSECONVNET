@@ -150,3 +150,65 @@ def train_segmentation(*,
 
         writer.flush()
     writer.close()
+
+
+
+def predict_gen_segmentation(data_path, net, batch_size, nevents):
+    """
+    A generator that yields a dictionary with output of collate plus
+    output of  network.
+    Parameters:
+    ---------
+        data_path : str
+                    path to dataset
+        net       : torch.nn.Model
+                    network to use for prediction
+        batch_size: int
+        nevents   : int
+                    Predict on only nevents first events from the dataset
+    Yields:
+    --------
+        dict
+            the elements of the dictionary are:
+            coords      : np.array (2d) containing XYZ coordinate bin index
+            label       : np.array containing original voxel label
+            energy      : np.array containing energies per voxel
+            dataset_id  : np.array containing dataset_id as in input file
+            predictions : np.array (2d) containing predictions for all the classes
+    """
+
+    gen    = DataGen(data_path, LabelType.Segmentation, nevents = nevents)
+    loader = torch.utils.data.DataLoader(gen,
+                                         batch_size = batch_size,
+                                         shuffle = False,
+                                         num_workers = 1,
+                                         collate_fn = collatefn,
+                                         drop_last = False,
+                                         pin_memory = False)
+
+    net.eval()
+    start_id = 0
+    softmax = torch.nn.Softmax(dim = 1)
+    with torch.autograd.no_grad():
+        for batchid, (coord, ener, label, event) in enumerate(loader):
+            batch_size = len(event)
+            ener, label = ener.cuda(), label.cuda()
+            output = net.forward((coord, ener, batch_size))
+            y_pred = softmax(output).cpu().detach().numpy()
+
+
+            # event is a vector of batch_size
+            # to obtain event per voxel we need to look into inside batch id (last index in coords)
+            # and find indices where id changes
+
+            aux_id = coord[:, -1].cpu().detach().numpy()
+            _, lengths = np.unique(aux_id, return_counts = True)
+            dataset_id = np.repeat(event.numpy(), lengths)
+
+            out_dict = dict(
+                coords      = coord[:, :3].cpu().detach().numpy(),
+                label       = label.cpu().detach().numpy(),
+                energy      = ener.cpu().detach().numpy().flatten(),
+                dataset_id  = dataset_id,
+                predictions = y_pred)
+            yield out_dict
