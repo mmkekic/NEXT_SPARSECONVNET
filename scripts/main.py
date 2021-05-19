@@ -119,7 +119,7 @@ if __name__ == '__main__':
                 dct.update({coorname[i]:coords[:, i] for i in range(3)})
                 predictions = dct.pop('predictions')
                 #unpack predictions and add them back to dictionary
-                dct.update({f'class_i':predictions[:, i] for i in range(predictions.shape[1])})
+                dct.update({f'class_{i}':predictions[:, i] for i in range(predictions.shape[1])})
 
                 #create pandas dataframe and save to output file
                 df = pd.DataFrame(dct)
