@@ -101,3 +101,22 @@ def weights_loss_segmentation(fname, nevents):
     mean_freq = df.mean()
     inverse_freq = 1./mean_freq
     return inverse_freq/sum(inverse_freq)
+
+
+def transform_input(original_hits):
+    bin_names = ['xbin', 'ybin', 'zbin']
+    bin_max = [441, 441, 551]
+
+    #mirroring in x, y and z
+    for n, m in zip(bin_names, bin_max):
+        if np.random.randint(2) == 1:
+            original_hits[n] = m - original_hits[n]
+
+    #rotating 90 degrees
+    if np.random.randint(2) == 1:
+        x1, x2 = np.random.choice(3, size = 2, replace = False) #chooses randomly the 2 coord and the direction of the rotation
+        x1_name, x1_max, x2_name = bin_names[x1], bin_max[x1], bin_names[x2]
+        save = original_hits[x2_name].copy()
+        original_hits[x2_name] = x1_max - original_hits[x1_name]
+        original_hits[x1_name] = save
+    return original_hits
