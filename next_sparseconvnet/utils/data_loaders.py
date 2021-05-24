@@ -33,7 +33,7 @@ class DataGen_classification(torch.utils.data.Dataset):
 
 
 class DataGen(torch.utils.data.Dataset):
-    def __init__(self, filename, label_type, nevents=None):
+    def __init__(self, filename, label_type, nevents=None, augmentation = False):
         """ This class yields events from pregenerated MC file.
         Parameters:
             filename : str; filename to read
@@ -52,12 +52,15 @@ class DataGen(torch.utils.data.Dataset):
                 self.events = self.events.iloc[:nevents]
         #self.bininfo    = load_dst(filename, 'DATASET', 'BinsInfo')
         self.h5in = None
+        self.augmentation = augmentation
 
     def __getitem__(self, idx):
         idx_ = self.events.iloc[idx].dataset_id
         if self.h5in is None:#this opens a table once getitem gets called
             self.h5in = tb.open_file(self.filename, 'r')
         hits  = self.h5in.root.DATASET.Voxels.read_where('dataset_id==idx_')
+        if self.augmentation == True:
+            hits = transform_input(hits)
         if self.label_type == LabelType.Classification:
             label = np.unique(hits['binclass'])
         elif self.label_type == LabelType.Segmentation:
