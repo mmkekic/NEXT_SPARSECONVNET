@@ -60,7 +60,7 @@ class DataGen(torch.utils.data.Dataset):
             self.h5in = tb.open_file(self.filename, 'r')
         hits  = self.h5in.root.DATASET.Voxels.read_where('dataset_id==idx_')
         if self.augmentation == True:
-            hits = transform_input(hits)
+            transform_input(hits)
         if self.label_type == LabelType.Classification:
             label = np.unique(hits['binclass'])
         elif self.label_type == LabelType.Segmentation:
@@ -122,4 +122,3 @@ def transform_input(original_hits):
         save = original_hits[x2_name].copy()
         original_hits[x2_name] = x1_max - original_hits[x1_name]
         original_hits[x1_name] = save
-    return original_hits
