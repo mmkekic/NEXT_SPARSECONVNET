@@ -118,8 +118,18 @@ def transform_input(original_hits, bin_max):
     #rotating 90 degrees
     if np.random.randint(2) == 1:
         x1, x2 = np.random.choice(3, size = 2, replace = False) #chooses randomly the 2 coord and the direction of the rotation
-        x1_name, x1_max, x2_name = bin_names[x1], bin_max[x1], bin_names[x2]
-        save = original_hits[x2_name].copy()
-        original_hits[x2_name] = x1_max - original_hits[x1_name]
-        original_hits[x1_name] = save
+        names   = [bin_names[x1], bin_names[x2]]
+        maxbin  = [bin_max[x1], bin_max[x2]]
+
+        hits    = [original_hits[names[1]].copy(), maxbin[0] - original_hits[names[0]]]
+
+        for h, m in zip(hits, maxbin):
+            if max(h)>m:
+                minbin = min(h)
+                h = h - minbin
+                if max(h)>m: #if after the translation it's still larger than it should, rotation doesn't occur
+                    return
+
+        original_hits[names[0]] = hits[0]
+        original_hits[names[1]] = hits[1]
     return
