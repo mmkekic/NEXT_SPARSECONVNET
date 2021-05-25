@@ -12,13 +12,15 @@ The final file contains
 import tables as tb
 from glob import glob
 import re
+import os
 from invisible_cities.core  .configure import configure
-
+import sys
 
 if __name__ == "__main__":
     config  = configure(sys.argv).as_namespace
     filesin = glob(os.path.expandvars(config.files_in))
     files_to_merge = sorted(filesin, key = lambda x:int(re.findall(r'\d+',x)[0]))
+    print(files_to_merge)
     fout = os.path.expandvars(config.file_out)
 
     with tb.open_file(files_to_merge[0], 'r') as h5in:
@@ -37,6 +39,7 @@ if __name__ == "__main__":
 
 
     for filein in files_to_merge[1:]:
+        print(filein)
         with tb.open_file(fout, 'a') as h5out:
             with tb.open_file(filein, 'r') as h5in:
                 prev_id =  h5out.root.DATASET.EventsInfo.cols.dataset_id[-1]+1
