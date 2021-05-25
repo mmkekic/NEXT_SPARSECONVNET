@@ -107,29 +107,32 @@ def weights_loss_segmentation(fname, nevents):
     return inverse_freq/sum(inverse_freq)
 
 
-def transform_input(original_hits, bin_max):
+def transform_input(hits, bin_max, inplace=True):
     bin_names = ['xbin', 'ybin', 'zbin']
 
+    if not inplace:
+        hits = hits.copy()
     #mirroring in x, y and z
     for n, m in zip(bin_names, bin_max):
         if np.random.randint(2) == 1:
-            original_hits[n] = m - original_hits[n]
+            hits[n] = m - hits[n]
 
-    #rotating 90 degrees
+    def possible_rotations(element):
+        x1, x2 = element
+        return ((hits[bin_names[x1]].max()-hits[bin_names[x1]].min()<=bin_max[x2]) and
+                (hits[bin_names[x2]].max()-hits[bin_names[x2]].min()<=bin_max[x1]))
     if np.random.randint(2) == 1:
-        x1, x2 = np.random.choice(3, size = 2, replace = False) #chooses randomly the 2 coord and the direction of the rotation
+        possible_rotations = list(filter(possible_rotations, itertools.permutations([0, 1, 2], 2)))
+        x1, x2 = possible_rotations[np.random.randint(len(possible_rotations))]
         names   = [bin_names[x1], bin_names[x2]]
         maxbin  = [bin_max[x1], bin_max[x2]]
+        #rotate hits
+        hits[names] = hits[names[::-1]]
+        #flip second axis
+        hits[names[1]] = maxbin[1]-hits[names[1]]
+        #substract (max_index - maxbin) if it is positive
+        hits[names[0]]-= max(hits[names[0]].max()-maxbin[0], 0)
+        hits[names[1]]-= max(hits[names[1]].max()-maxbin[1], 0)
 
-        hits    = [original_hits[names[1]].copy(), maxbin[0] - original_hits[names[0]]]
-
-        for h, m in zip(hits, maxbin):
-            if max(h)>m:
-                minbin = min(h)
-                h = h - minbin
-                if max(h)>m: #if after the translation it's still larger than it should, rotation doesn't occur
-                    return
-
-        original_hits[names[0]] = hits[0]
-        original_hits[names[1]] = hits[1]
-    return
+    if not inplace:
+        return hits
