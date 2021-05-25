@@ -50,7 +50,7 @@ class DataGen(torch.utils.data.Dataset):
                warnings.warn(UserWarning(f'length of dataset smaller than {nevents}, using full dataset'))
             else:
                 self.events = self.events.iloc[:nevents]
-        #self.bininfo    = load_dst(filename, 'DATASET', 'BinsInfo')
+        self.bininfo    = load_dst(filename, 'DATASET', 'BinsInfo')
         self.h5in = None
         self.augmentation = augmentation
 
@@ -60,7 +60,8 @@ class DataGen(torch.utils.data.Dataset):
             self.h5in = tb.open_file(self.filename, 'r')
         hits  = self.h5in.root.DATASET.Voxels.read_where('dataset_id==idx_')
         if self.augmentation == True:
-            transform_input(hits)
+            maxbins = [self.bininfo['nbins_x'][0], self.bininfo['nbins_y'][0], self.bininfo['nbins_z'][0]]
+            transform_input(hits, maxbins)
         if self.label_type == LabelType.Classification:
             label = np.unique(hits['binclass'])
         elif self.label_type == LabelType.Segmentation:
@@ -106,9 +107,8 @@ def weights_loss_segmentation(fname, nevents):
     return inverse_freq/sum(inverse_freq)
 
 
-def transform_input(original_hits):
+def transform_input(original_hits, bin_max):
     bin_names = ['xbin', 'ybin', 'zbin']
-    bin_max = [441, 441, 551]
 
     #mirroring in x, y and z
     for n, m in zip(bin_names, bin_max):
