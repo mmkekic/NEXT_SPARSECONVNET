@@ -122,3 +122,4 @@ def transform_input(original_hits, bin_max):
         save = original_hits[x2_name].copy()
         original_hits[x2_name] = x1_max - original_hits[x1_name]
         original_hits[x1_name] = save
+    return
