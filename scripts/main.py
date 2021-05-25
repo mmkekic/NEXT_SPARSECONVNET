@@ -116,7 +116,8 @@ if __name__ == '__main__':
                            tensorboard_dir = parameters.tensorboard_dir,
                            num_workers = parameters.num_workers,
                            nevents_train = parameters.nevents_train,
-                           nevents_valid = parameters.nevents_valid)
+                           nevents_valid = parameters.nevents_valid,
+                           augmentation  = parameters.augmentation)
 
     if action == 'predict':
         gen = predict_gen_segmentation(data_path = parameters.predict_file,
