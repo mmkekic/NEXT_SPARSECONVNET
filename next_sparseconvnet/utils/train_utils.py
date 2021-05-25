@@ -107,11 +107,12 @@ def train_segmentation(*,
                        tensorboard_dir,
                        num_workers,
                        nevents_train = None,
-                       nevents_valid = None):
+                       nevents_valid = None,
+                       augmentation  = False):
     """
         Trains the net nepoch times and saves the model anytime the validation loss decreases
     """
-    train_gen = DataGen(train_data_path, LabelType.Segmentation, nevents = nevents_train)
+    train_gen = DataGen(train_data_path, LabelType.Segmentation, nevents = nevents_train, augmentation = augmentation)
     valid_gen = DataGen(valid_data_path, LabelType.Segmentation, nevents = nevents_valid)
 
     loader_train = torch.utils.data.DataLoader(train_gen,
