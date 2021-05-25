@@ -108,6 +108,7 @@ def weights_loss_segmentation(fname, nevents):
 
 
 def transform_input(hits, bin_max, inplace=True):
+    print('augmenting')
     bin_names = ['xbin', 'ybin', 'zbin']
 
     if not inplace:
