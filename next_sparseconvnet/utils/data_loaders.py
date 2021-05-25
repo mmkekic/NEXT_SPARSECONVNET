@@ -3,6 +3,7 @@ import numpy  as np
 import pandas as pd
 import torch
 import warnings
+import itertools
 from enum import auto
 
 from invisible_cities.io   .dst_io  import load_dst
@@ -108,7 +109,6 @@ def weights_loss_segmentation(fname, nevents):
 
 
 def transform_input(hits, bin_max, inplace=True):
-    print('augmenting')
     bin_names = ['xbin', 'ybin', 'zbin']
 
     if not inplace:
