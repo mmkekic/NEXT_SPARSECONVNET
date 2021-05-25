@@ -122,8 +122,8 @@ def transform_input(hits, bin_max, inplace=True):
         return ((hits[bin_names[x1]].max()-hits[bin_names[x1]].min()<=bin_max[x2]) and
                 (hits[bin_names[x2]].max()-hits[bin_names[x2]].min()<=bin_max[x1]))
     if np.random.randint(2) == 1:
-        possible_rotations = list(filter(possible_rotations, itertools.permutations([0, 1, 2], 2)))
-        x1, x2 = possible_rotations[np.random.randint(len(possible_rotations))]
+        rotations_list = list(filter(possible_rotations, itertools.permutations([0, 1, 2], 2)))
+        x1, x2 = rotations_list[np.random.randint(len(rotations_list))]
         names   = [bin_names[x1], bin_names[x2]]
         maxbin  = [bin_max[x1], bin_max[x2]]
         #rotate hits
