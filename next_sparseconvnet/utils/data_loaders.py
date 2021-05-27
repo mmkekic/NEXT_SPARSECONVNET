@@ -54,15 +54,15 @@ class DataGen(torch.utils.data.Dataset):
         self.bininfo    = load_dst(filename, 'DATASET', 'BinsInfo')
         self.h5in = None
         self.augmentation = augmentation
+        self.maxbins = [self.bininfo['nbins_x'][0], self.bininfo['nbins_y'][0], self.bininfo['nbins_z'][0]]
 
     def __getitem__(self, idx):
         idx_ = self.events.iloc[idx].dataset_id
         if self.h5in is None:#this opens a table once getitem gets called
             self.h5in = tb.open_file(self.filename, 'r')
         hits  = self.h5in.root.DATASET.Voxels.read_where('dataset_id==idx_')
-        if self.augmentation == True:
-            maxbins = [self.bininfo['nbins_x'][0], self.bininfo['nbins_y'][0], self.bininfo['nbins_z'][0]]
-            transform_input(hits, maxbins)
+        if self.augmentation:
+            transform_input(hits, self.maxbins)
         if self.label_type == LabelType.Classification:
             label = np.unique(hits['binclass'])
         elif self.label_type == LabelType.Segmentation:
