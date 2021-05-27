@@ -129,11 +129,11 @@ def transform_input(hits, bin_max, inplace=True):
         maxbin  = [bin_max[x1], bin_max[x2]]
         #rotate hits
         hits[names] = hits[names[::-1]]
-        #flip second axis
+        #flip second axis; this can make bins negative cause maxbin[x1]!=maxbin[x2]
         hits[names[1]] = maxbin[1]-hits[names[1]]
-        #substract (max_index - maxbin) if it is positive
+        #substract (max_index - maxbin) if it is positive for x1
         hits[names[0]]-= max(hits[names[0]].max()-maxbin[0], 0)
-        hits[names[1]]-= max(hits[names[1]].max()-maxbin[1], 0)
-
+        #substract min of 0 and min(hits[names[1]]) to ensure bins are positive for x2
+        hits[names[1]]-= min(hits[names[1]].min(), 0)
     if not inplace:
         return hits
