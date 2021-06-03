@@ -30,13 +30,9 @@ def segmentation_blob_classification(orig_dataset_path, pred_dataset_path, thres
     events are classified as signal or background
     '''
     original_events = read_events_info(orig_dataset_path, nevents)
-    original_events['pred_class'] = ''
-    for i in range(len(original_events)):
-        nblobs = number_of_blobs(pred_dataset_path, i, threshold)
-        if nblobs == 2:
-            original_events.at[i, 'pred_class'] = 1 #signal
-        else:
-            original_events.at[i, 'pred_class'] = 0 #background
+    original_events = original_events.assign(pred_class = original_events['dataset_id'])
+    original_events.pred_class = original_events.pred_class.apply(lambda x:number_of_blobs(pred_dataset_path, x, threshold)==2)
+    original_events.pred_class = original_events.pred_class.astype(int)
     return original_events
 
 def success_rates(true_class, predicted_class):
