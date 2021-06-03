@@ -144,3 +144,12 @@ def read_event(fname, datid, table='Voxels', group='DATASET', df=True):
         if df:
             return pd.DataFrame.from_records(hits)
         return hits
+
+def read_events_info(filename, nevents):
+    events = load_dst(filename, 'DATASET', 'EventsInfo')
+    if nevents is not None:
+        if nevents>=len(events):
+            warnings.warn(UserWarning(f'length of dataset smaller than {nevents}, using full dataset'))
+        else:
+            events = events.iloc[:nevents]
+    return events
