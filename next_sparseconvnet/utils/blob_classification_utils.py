@@ -5,7 +5,7 @@ import networkx as nx
 
 import itertools
 
-from next_sparseconvnet.utils.data_loaders             import DataGen, LabelType, read_event
+from next_sparseconvnet.utils.data_loaders             import DataGen, LabelType, read_event, read_events_info
 
 def number_of_blobs(pred_dataset_path, dataset_id, threshold, class_type = 'class_2', max_distance = np.sqrt(3)):
     '''
@@ -29,7 +29,7 @@ def segmentation_blob_classification(orig_dataset_path, pred_dataset_path, thres
     Adds a column to the events dataframe where depending on the number of blobs the predicted data had,
     events are classified as signal or background
     '''
-    original_events = DataGen(orig_dataset_path, LabelType.Segmentation, nevents = nevents).events
+    original_events = read_events_info(orig_dataset_path, nevents)
     original_events['pred_class'] = ''
     for i in range(len(original_events)):
         nblobs = number_of_blobs(pred_dataset_path, i, threshold)
