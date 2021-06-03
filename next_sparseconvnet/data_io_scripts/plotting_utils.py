@@ -91,11 +91,3 @@ def plot_3d_hits(hits, value='energy', coords = ['x', 'y', 'z'], cmap = mpl.cm.j
     cb.set_label (value)
 
     plt.show()
-
-
-def read_event(fname, datid, table='Voxels', group='DATASET', df=True):
-    with tb.open_file(fname) as h5in:
-        hits = h5in.root[group][table].read_where('dataset_id==datid')
-        if df:
-            return pd.DataFrame.from_records(hits)
-        return hits
