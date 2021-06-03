@@ -5,8 +5,7 @@ import networkx as nx
 
 import itertools
 
-from next_sparseconvnet.utils.data_loaders             import DataGen, LabelType
-from next_sparseconvnet.data_io_scripts.plotting_utils import read_event
+from next_sparseconvnet.utils.data_loaders             import DataGen, LabelType, read_event
 
 def number_of_blobs(pred_dataset_path, dataset_id, threshold, class_type = 'class_2', max_distance = np.sqrt(3)):
     '''
