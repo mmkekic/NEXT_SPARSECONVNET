@@ -45,12 +45,7 @@ class DataGen(torch.utils.data.Dataset):
         if not isinstance(label_type, LabelType):
             raise ValueError(f'{label_type} not recognized!')
         self.label_type = label_type
-        self.events     = load_dst(filename, 'DATASET', 'EventsInfo')
-        if nevents is not None:
-            if nevents>=len(self.events):
-               warnings.warn(UserWarning(f'length of dataset smaller than {nevents}, using full dataset'))
-            else:
-                self.events = self.events.iloc[:nevents]
+        self.events     = read_events_info(filename, nevents)
         self.bininfo    = load_dst(filename, 'DATASET', 'BinsInfo')
         self.h5in = None
         self.augmentation = augmentation
@@ -137,3 +132,19 @@ def transform_input(hits, bin_max, inplace=True):
         hits[names[1]]-= min(hits[names[1]].min(), 0)
     if not inplace:
         return hits
+
+def read_event(fname, datid, table='Voxels', group='DATASET', df=True):
+    with tb.open_file(fname) as h5in:
+        hits = h5in.root[group][table].read_where('dataset_id==datid')
+        if df:
+            return pd.DataFrame.from_records(hits)
+        return hits
+
+def read_events_info(filename, nevents):
+    events = load_dst(filename, 'DATASET', 'EventsInfo')
+    if nevents is not None:
+        if nevents>=len(events):
+            warnings.warn(UserWarning(f'length of dataset smaller than {nevents}, using full dataset'))
+        else:
+            events = events.iloc[:nevents]
+    return events
