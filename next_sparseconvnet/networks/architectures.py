@@ -253,6 +253,7 @@ class ResNet(torch.nn.Module):
         self.sparse  = scn.SparseToDense(dim,inplanes)
         self.linear1 = torch.nn.Linear(inplanes, nlinear)
         self.linear2 = torch.nn.Linear(nlinear, nclasses)
+        self.activation = torch.nn.ReLU()
 
     def forward(self, x):
         '''
@@ -285,6 +286,7 @@ class ResNet(torch.nn.Module):
         x = self.sparse(x)
         x = x.squeeze()
         x = self.linear1(x)
+        x = self.activation(x)
         x = self.linear2(x)
 
         return x
