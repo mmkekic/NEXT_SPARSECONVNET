@@ -96,6 +96,10 @@ if __name__ == '__main__':
         net.load_state_dict(dct_weights, strict=False)
         print('weights loaded')
 
+        if parameters.freeze_weights:
+            for name, param in net.named_parameters():
+                if name in dct_weights:
+                    param.requires_grad = False
 
 
     if action == 'train':
@@ -110,7 +114,7 @@ if __name__ == '__main__':
             weights = None
 
         criterion = torch.nn.CrossEntropyLoss(weight = weights)
-        optimizer = torch.optim.Adam(net.parameters(),
+        optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, net.parameters()),
                                      lr = parameters.lr,
                                      betas = parameters.betas,
                                      eps = parameters.eps,
