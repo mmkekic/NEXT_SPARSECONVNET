@@ -22,13 +22,21 @@ def IoU(true, pred, nclass = 3):
         IoU.append((confusion_matrix[i, i] + eps) / (sum(confusion_matrix[:, i]) + sum(confusion_matrix[i, :]) - confusion_matrix[i, i] + eps))
     return np.array(IoU)
 
+def accuracy(true, pred, **kwrgs):
+    return sum(true==pred)/len(true)
 
-def train_one_epoch_segmentation(epoch_id, net, criterion, optimizer, loader, nclass = 3):
+def train_one_epoch(epoch_id, net, criterion, optimizer, loader, label_type, nclass = 3):
     """
         Trains the net for all the train data one time
     """
     net.train()
-    loss_epoch, iou_epoch = 0, np.zeros(nclass)
+    loss_epoch = 0
+    if label_type== LabelType.Segmentation:
+        metrics = IoU
+        met_epoch = np.zeros(nclass)
+    elif label_type == LabelType.Classification:
+        metrics = accuracy
+        met_epoch = 0
     for batchid, (coord, ener, label, event) in enumerate(loader):
         batch_size = len(event)
         ener, label = ener.cuda(), label.cuda()
@@ -44,26 +52,33 @@ def train_one_epoch_segmentation(epoch_id, net, criterion, optimizer, loader, nc
 
         loss_epoch += loss.item()
 
-        #IoU
         softmax = torch.nn.Softmax(dim = 1)
         prediction = torch.argmax(softmax(output), 1)
-        iou_epoch += IoU(label.cpu(), prediction.cpu(), nclass = nclass)
+        met_epoch += metrics(label.cpu(), prediction.cpu(), nclass=nclass)
 
     loss_epoch = loss_epoch / len(loader)
-    iou_epoch = iou_epoch / len(loader)
+    met_epoch = met_epoch / len(loader)
     epoch_ = f"Train Epoch: {epoch_id}"
     loss_ = f"\t Loss: {loss_epoch:.6f}"
     print(epoch_ + loss_)
 
-    return loss_epoch, iou_epoch
+    return loss_epoch, met_epoch
 
 
-def valid_one_epoch_segmentation(net, criterion, loader, nclass = 3):
+def valid_one_epoch(net, criterion, loader, label_type, nclass = 3):
     """
-        Computes loss and IoU for all the validation data
+        Computes loss and metrics (IoU for segmentation and accuracy for classification)
+        for all the validation data
     """
     net.eval()
-    loss_epoch, iou_epoch = 0, np.zeros(nclass)
+    loss_epoch = 0
+    if label_type== LabelType.Segmentation:
+        metrics = IoU
+        met_epoch = np.zeros(nclass)
+    elif label_type == LabelType.Classification:
+        metrics = accuracy
+        met_epoch = 0
+
     with torch.autograd.no_grad():
         for batchid, (coord, ener, label, event) in enumerate(loader):
             batch_size = len(event)
@@ -78,14 +93,14 @@ def valid_one_epoch_segmentation(net, criterion, loader, nclass = 3):
             #IoU
             softmax = torch.nn.Softmax(dim = 1)
             prediction = torch.argmax(softmax(output), 1)
-            iou_epoch += IoU(label.cpu(), prediction.cpu())
+            met_epoch += metrics(label.cpu(), prediction.cpu(), nclass=nclass)
 
         loss_epoch = loss_epoch / len(loader)
-        iou_epoch = iou_epoch / len(loader)
+        met_epoch = met_epoch / len(loader)
         loss_ = f"\t Validation Loss: {loss_epoch:.6f}"
         print(loss_)
 
-    return loss_epoch, iou_epoch
+    return loss_epoch, met_epoch
 
 
 
@@ -94,26 +109,27 @@ def save_checkpoint(state, filename='checkpoint.pth.tar'):
 
 
 
-def train_segmentation(*,
-                       nepoch,
-                       train_data_path,
-                       valid_data_path,
-                       train_batch_size,
-                       valid_batch_size,
-                       net,
-                       criterion,
-                       optimizer,
-                       checkpoint_dir,
-                       tensorboard_dir,
-                       num_workers,
-                       nevents_train = None,
-                       nevents_valid = None,
-                       augmentation  = False):
+def train_net(*,
+              nepoch,
+              train_data_path,
+              valid_data_path,
+              train_batch_size,
+              valid_batch_size,
+              net,
+              criterion,
+              optimizer,
+              label_type,
+              checkpoint_dir,
+              tensorboard_dir,
+              num_workers,
+              nevents_train = None,
+              nevents_valid = None,
+              augmentation  = False):
     """
         Trains the net nepoch times and saves the model anytime the validation loss decreases
     """
-    train_gen = DataGen(train_data_path, LabelType.Segmentation, nevents = nevents_train, augmentation = augmentation)
-    valid_gen = DataGen(valid_data_path, LabelType.Segmentation, nevents = nevents_valid)
+    train_gen = DataGen(train_data_path, label_type, nevents = nevents_train, augmentation = augmentation)
+    valid_gen = DataGen(valid_data_path, label_type, nevents = nevents_valid)
 
     loader_train = torch.utils.data.DataLoader(train_gen,
                                                batch_size = train_batch_size,
@@ -133,8 +149,8 @@ def train_segmentation(*,
     start_loss = np.inf
     writer = SummaryWriter(tensorboard_dir)
     for i in range(nepoch):
-        train_loss, train_iou = train_one_epoch_segmentation(i, net, criterion, optimizer, loader_train)
-        valid_loss, valid_iou = valid_one_epoch_segmentation(net, criterion, loader_valid)
+        train_loss, train_met = train_one_epoch(i, net, criterion, optimizer, loader_train, label_type)
+        valid_loss, valid_met = valid_one_epoch(net, criterion, loader_valid, label_type)
 
         if valid_loss < start_loss:
             save_checkpoint({'state_dict': net.state_dict(),
@@ -142,19 +158,21 @@ def train_segmentation(*,
             start_loss = valid_loss
 
         writer.add_scalar('loss/train', train_loss, i)
-        for k, iou in enumerate(train_iou):
-            writer.add_scalar(f'iou/train_{k}class', iou, i)
-
         writer.add_scalar('loss/valid', valid_loss, i)
-        for k, iou in enumerate(valid_iou):
-            writer.add_scalar(f'iou/valid_{k}class', iou, i)
-
+        if label_type == LabelType.Segmentation:
+            for k, iou in enumerate(train_met):
+                writer.add_scalar(f'iou/train_{k}class', iou, i)
+            for k, iou in enumerate(valid_met):
+                writer.add_scalar(f'iou/valid_{k}class', iou, i)
+        elif label_type == LabelType.Classification:
+            writer.add_scalar('acc/train', train_met, i)
+            writer.add_scalar('acc/valid', valid_met, i)
         writer.flush()
     writer.close()
 
 
 
-def predict_gen_segmentation(data_path, net, batch_size, nevents):
+def predict_gen(data_path, net, label_type, batch_size, nevents):
     """
     A generator that yields a dictionary with output of collate plus
     output of  network.
@@ -178,7 +196,7 @@ def predict_gen_segmentation(data_path, net, batch_size, nevents):
             predictions : np.array (2d) containing predictions for all the classes
     """
 
-    gen    = DataGen(data_path, LabelType.Segmentation, nevents = nevents)
+    gen    = DataGen(data_path, label_type, nevents = nevents)
     loader = torch.utils.data.DataLoader(gen,
                                          batch_size = batch_size,
                                          shuffle = False,
@@ -188,7 +206,6 @@ def predict_gen_segmentation(data_path, net, batch_size, nevents):
                                          pin_memory = False)
 
     net.eval()
-    start_id = 0
     softmax = torch.nn.Softmax(dim = 1)
     with torch.autograd.no_grad():
         for batchid, (coord, ener, label, event) in enumerate(loader):
@@ -197,19 +214,25 @@ def predict_gen_segmentation(data_path, net, batch_size, nevents):
             output = net.forward((coord, ener, batch_size))
             y_pred = softmax(output).cpu().detach().numpy()
 
+            if label_type == LabelType.Classification():
+                out_dict = dict(
+                    label = label.cpu().detach().numpy(),
+                    dataset_id = event,
+                    prediction = y_pred)
 
-            # event is a vector of batch_size
-            # to obtain event per voxel we need to look into inside batch id (last index in coords)
-            # and find indices where id changes
+            elif label_type == LabelType.Segmentation():
+                # event is a vector of batch_size
+                # to obtain event per voxel we need to look into inside batch id (last index in coords)
+                # and find indices where id changes
 
-            aux_id = coord[:, -1].cpu().detach().numpy()
-            _, lengths = np.unique(aux_id, return_counts = True)
-            dataset_id = np.repeat(event.numpy(), lengths)
+                aux_id = coord[:, -1].cpu().detach().numpy()
+                _, lengths = np.unique(aux_id, return_counts = True)
+                dataset_id = np.repeat(event.numpy(), lengths)
 
-            out_dict = dict(
-                coords      = coord[:, :3].cpu().detach().numpy(),
-                label       = label.cpu().detach().numpy(),
-                energy      = ener.cpu().detach().numpy().flatten(),
-                dataset_id  = dataset_id,
-                predictions = y_pred)
+                out_dict = dict(
+                    coords      = coord[:, :3].cpu().detach().numpy(),
+                    label       = label.cpu().detach().numpy(),
+                    energy      = ener.cpu().detach().numpy().flatten(),
+                    dataset_id  = dataset_id,
+                    predictions = y_pred)
             yield out_dict
