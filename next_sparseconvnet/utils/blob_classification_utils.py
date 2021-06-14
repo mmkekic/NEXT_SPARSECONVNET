@@ -16,6 +16,7 @@ def number_of_blobs(pred_dataset_path, dataset_id, threshold, class_type = 'clas
     selected_hits[['xbin', 'ybin', 'zbin']] = event_df[['xbin', 'ybin', 'zbin']][event_df[class_type]>threshold]
     voxels = [tuple(x) for x in selected_hits.to_numpy()]
     vox_graph = nx.Graph()
+    vox_graph.add_nodes_from(voxels)
     for va, vb in itertools.combinations(voxels, 2):
         va_arr, vb_arr = np.array(va), np.array(vb)
         dis = np.linalg.norm(va_arr-vb_arr)
