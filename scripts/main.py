@@ -15,19 +15,18 @@ import numpy  as np
 import pandas as pd
 import tables as tb
 
-import torch
-
 from invisible_cities.io.dst_io import df_writer
 from invisible_cities.cities.components import index_tables
 
 
 from next_sparseconvnet.utils.data_loaders     import LabelType
-from next_sparseconvnet.utils.data_loaders     import weights_loss_segmentation
+from next_sparseconvnet.utils.data_loaders     import weights_loss
 from next_sparseconvnet.networks.architectures import NetArchitecture
 from next_sparseconvnet.networks.architectures import UNet
+from next_sparseconvnet.networks.architectures import ResNet
 
-from next_sparseconvnet.utils.train_utils      import train_segmentation
-from next_sparseconvnet.utils.train_utils      import predict_gen_segmentation
+from next_sparseconvnet.utils.train_utils      import train_net
+from next_sparseconvnet.utils.train_utils      import predict_gen
 
 def is_valid_action(parser, arg):
     if not arg in ['train', 'predict']:
@@ -79,17 +78,34 @@ if __name__ == '__main__':
                    parameters.basic_num,
                    momentum = parameters.momentum)
         net = net.cuda()
+    elif parameters.netarch == NetArchitecture.ResNet:
+        net = ResNet(parameters.spatial_size,
+                     parameters.init_conv_nplanes,
+                     parameters.init_conv_kernel,
+                     parameters.kernel_sizes,
+                     parameters.stride_sizes,
+                     parameters.basic_num,
+                     momentum = parameters.momentum,
+                     nlinear = parameters.nlinear)
+        net = net.cuda()
+
+    print('net constructed')
 
     if parameters.saved_weights:
-        net.load_state_dict(torch.load(parameters.saved_weights)['state_dict'])
+        dct_weights = torch.load(parameters.saved_weights)['state_dict']
+        net.load_state_dict(dct_weights, strict=False)
         print('weights loaded')
 
+        if parameters.freeze_weights:
+            for name, param in net.named_parameters():
+                if name in dct_weights:
+                    param.requires_grad = False
 
 
     if action == 'train':
         if parameters.weight_loss is True: #calculate mean using first 5000 events from file
             print('Calculating weights')
-            weights = torch.Tensor(weights_loss_segmentation(parameters.train_file, 5000)).cuda()
+            weights = torch.Tensor(weights_loss(parameters.train_file, 5000, parameters.labeltype)).cuda()
             print('Weights are', weights)
         elif isinstance(parameters.weight_loss, list):
             weights = torch.Tensor(parameters.weight_loss).cuda()
@@ -98,46 +114,53 @@ if __name__ == '__main__':
             weights = None
 
         criterion = torch.nn.CrossEntropyLoss(weight = weights)
-        optimizer = torch.optim.Adam(net.parameters(),
+        optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, net.parameters()),
                                      lr = parameters.lr,
                                      betas = parameters.betas,
                                      eps = parameters.eps,
                                      weight_decay = parameters.weight_decay)
 
-        train_segmentation(nepoch = parameters.nepoch,
-                           train_data_path = parameters.train_file,
-                           valid_data_path = parameters.valid_file,
-                           train_batch_size = parameters.train_batch,
-                           valid_batch_size = parameters.valid_batch,
-                           net = net,
-                           criterion = criterion,
-                           optimizer = optimizer,
-                           checkpoint_dir = parameters.checkpoint_dir,
-                           tensorboard_dir = parameters.tensorboard_dir,
-                           num_workers = parameters.num_workers,
-                           nevents_train = parameters.nevents_train,
-                           nevents_valid = parameters.nevents_valid,
-                           augmentation  = parameters.augmentation)
+        train_net(nepoch = parameters.nepoch,
+                  train_data_path = parameters.train_file,
+                  valid_data_path = parameters.valid_file,
+                  train_batch_size = parameters.train_batch,
+                  valid_batch_size = parameters.valid_batch,
+                  net = net,
+                  label_type = parameters.labeltype,
+                  criterion = criterion,
+                  optimizer = optimizer,
+                  checkpoint_dir = parameters.checkpoint_dir,
+                  tensorboard_dir = parameters.tensorboard_dir,
+                  num_workers = parameters.num_workers,
+                  nevents_train = parameters.nevents_train,
+                  nevents_valid = parameters.nevents_valid,
+                  augmentation  = parameters.augmentation)
 
     if action == 'predict':
-        gen = predict_gen_segmentation(data_path = parameters.predict_file,
-                              net = net,
-                              batch_size = parameters.predict_batch,
-                              nevents = parameters.nevents_predict)
+        gen = predict_gen(data_path = parameters.predict_file,
+                          label_type = parameters.labeltype,
+                          net = net,
+                          batch_size = parameters.predict_batch,
+                          nevents = parameters.nevents_predict)
         coorname = ['xbin', 'ybin', 'zbin']
         output_name = parameters.out_file
 
+        if parameters.labeltype == LabelType.Segmentation:
+            tname = 'VoxelsPred'
+        else:
+            tname = 'EventPred'
         with tb.open_file(output_name, 'w') as h5out:
             for dct in gen:
-                coords = dct.pop('coords')
-                #unpack coords and add them to dictionary
-                dct.update({coorname[i]:coords[:, i] for i in range(3)})
+                if 'coords' in dct:
+                    coords = dct.pop('coords')
+                    #unpack coords and add them to dictionary
+                    dct.update({coorname[i]:coords[:, i] for i in range(3)})
                 predictions = dct.pop('predictions')
                 #unpack predictions and add them back to dictionary
                 dct.update({f'class_{i}':predictions[:, i] for i in range(predictions.shape[1])})
 
                 #create pandas dataframe and save to output file
                 df = pd.DataFrame(dct)
-                df_writer(h5out, df, 'DATASET', 'VoxelsPred', columns_to_index=['dataset_id'])
+                df_writer(h5out, df, 'DATASET', tname, columns_to_index=['dataset_id'])
 
         index_tables(output_name)

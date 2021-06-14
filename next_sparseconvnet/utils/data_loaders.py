@@ -102,6 +102,20 @@ def weights_loss_segmentation(fname, nevents):
     inverse_freq = 1./mean_freq
     return inverse_freq/sum(inverse_freq)
 
+def weights_loss_classification(fname, nevents):
+    with tb.open_file(fname, 'r') as h5in:
+        binclass   = h5in.root.DATASET.EventsInfo.cols.binclass[:]
+
+    nsignal = binclass.sum()
+    nbackground = len(binclass)-nsignal
+    inverse_freq = [nbackground, nsignal]
+    return inverse_freq/sum(inverse_freq)
+
+def weights_loss(fname, nevents, label_type):
+    if label_type==LabelType.Segmentation:
+        return weights_loss_segmentation(fname, nevents)
+    elif label_type == LabelType.Classification:
+        return weights_loss_classification(fname, nevents)
 
 def transform_input(hits, bin_max, inplace=True):
     bin_names = ['xbin', 'ybin', 'zbin']
