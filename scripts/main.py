@@ -76,6 +76,7 @@ if __name__ == '__main__':
                    parameters.kernel_sizes,
                    parameters.stride_sizes,
                    parameters.basic_num,
+                   nclasses = parameters.nclasses,
                    momentum = parameters.momentum)
         net = net.cuda()
     elif parameters.netarch == NetArchitecture.ResNet:
